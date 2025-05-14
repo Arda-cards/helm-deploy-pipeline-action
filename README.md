@@ -13,7 +13,7 @@ This action expects the project to have been checked out already in the `github.
 |------------------------------------------------|----------|----------------------------------------------------------------|
 | `src/main/cloudformation/pre-install.cfn.yml`  | no       | If present, applied before the helm deployment                 |
 | `src/main/cloudformation/post-install.cfn.yml` | no       | If present, applied after the helm deployment                  |
-| `src/main/helm/`                               | yes      | `values.yaml` and `values-`*phase*`.yaml` configure the chart. | 
+| `src/main/helm/`                               | yes      | `values.yaml` and `values-`*phase*`.yaml` configure the chart. |
 
 ## Arguments
 
