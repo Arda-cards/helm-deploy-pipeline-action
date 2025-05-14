@@ -1,0 +1,109 @@
+---
+name: gradle-build-pipeline
+description: "Checkout, build and tag gradle projects"
+inputs:
+  aws_role:
+    description: "The AWS role for the connection"
+    required: true
+  aws_region:
+    description: "The AWS region to deploy to"
+    required: true
+  chart_name:
+    description: "The name of the chart to deploy "
+    required: true
+  chart_version:
+    description: "The version of the chart to deploy "
+    required: true
+  clean_up:
+    description: "Tell Helm to clean up failed deployment. Disable only while debugging deployment issue."
+    required: false
+    default: "true"
+  cluster_name:
+    description: "The name of the cluster"
+    required: true
+  dry_run:
+    description: "Set to true to perform a helm dry-run deployment"
+    required: false
+    default: "false"
+  github_token:
+    description: "The authentication token"
+    required: true
+  helm_registry:
+    description: "The registry to retrieve Helm charts from"
+    required: true
+  image_pull_secret:
+    description: "The secrets for kubernetes to pull images from the OCI registry"
+    required: true
+  module_name:
+    description: "The name of the module being deployed, it is the helm release name;
+                  it also serves as the default base name for the kubernetes namespace. "
+    required: true
+  namespace:
+    description: "The name of the namespace to deploy to."
+    required: true
+  phase:
+    description: "The phase in the deployment pipeline (dev, prod, ...)"
+    required: true
+  timeout:
+    description: "time to wait for the deployment to succeed (a Go duration, default 5m0s)"
+    required: false
+    default: "5m0s"
+  verbose:
+    description: "enable verbose output"
+    required: false
+    default: "false"
+runs:
+  using: "composite"
+  steps:
+    - uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ inputs.aws_role }}
+        aws-region: ${{ inputs.aws_region }}
+        role-duration-seconds: 900
+    - id: account-information
+      name: "Extract account information"
+      shell: bash
+      run: |
+        [ "${{ runner.debug }}" == 1 ] && set -xv
+        set -u
+
+        readonly name=$(aws --query AccountName --output text account get-account-information)
+        echo "name=${name}" >>"${GITHUB_OUTPUT}"
+    - name: "Pre-install cloudformation"
+      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      if: ${{ hashFiles('src/main/cloudformation/pre-install.cfn.yml') != '' }}
+      with:
+        capabilities: "CAPABILITY_NAMED_IAM"
+        name: ${{ steps.account-information.outputs.name }}-${{ inputs.namespace }}-pre
+        no-fail-on-empty-changeset: "1"
+        parameter-overrides: >-
+          Environment=${{ steps.account-information.outputs.name }},
+          Module=${{ inputs.module_name }},
+          Namespace=${{ inputs.namespace }},
+          GhcrPullKey=${{ inputs.image_pull_secret }}
+        tags: "[ { \"Key\":\"Environment\", \"Value\":\"${{ steps.account-information.outputs.name }}\" }]"
+        template: src/main/cloudformation/pre-install.cfn.yml
+    - uses: Arda-cards/helm-deploy-action@v3
+      with:
+        aws_role: ${{ inputs.aws_role }}
+        aws_region: ${{ inputs.aws_region }}
+        chart_name: ${{ inputs.chart_name }}
+        chart_version: ${{ inputs.chart_version }}
+        clean_up: ${{ inputs.clean_up }}
+        cluster_name: ${{ inputs.cluster_name }}
+        github_token: ${{ inputs.github_token }}
+        helm_registry: ${{ inputs.helm_registry }}
+        module_name: ${{ inputs.module_name }}
+        namespace: ${{ inputs.namespace }}
+        phase: ${{ inputs.phase }}
+        verbose: true
+    - name: "Post-install cloudformation"
+      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      if: ${{ hashFiles('src/main/cloudformation/post-install.cfn.yml') != '' }}
+      with:
+        name: ${{ steps.account-information.outputs.name }}-${{ inputs.namespace }}-post
+        no-fail-on-empty-changeset: "1"
+        parameter-overrides: >-
+          Environment=${{ steps.account-information.outputs.name }}
+        tags: "[ { \"Key\":\"Environment\", \"Value\":\"${{ steps.account-information.outputs.name }}\" }]"
+        template: src/main/cloudformation/post-install.cfn.yml
