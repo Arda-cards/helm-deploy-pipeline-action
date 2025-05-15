@@ -18,6 +18,16 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [1.1.0] - 2025-05-15
+
+### Added
+
+- `cloudformation_parameter` and `helm_value` to provide deployment time values to helm/CloudFormation.
+
+### Deprecated
+
+- `image_pull_secret` should be passed through the `cloudformation_parameter`.
+
 ## [1.0.0] - 2025-05-14
 
 ### Added
