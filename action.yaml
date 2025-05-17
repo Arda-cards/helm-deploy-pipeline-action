@@ -132,7 +132,6 @@ runs:
         template: src/main/cloudformation/pre-install.cfn.yml
     - uses: Arda-cards/helm-deploy-action@v3
       with:
-        aws_role: ${{ inputs.aws_role }}
         aws_region: ${{ inputs.aws_region }}
         chart_name: ${{ inputs.chart_name }}
         chart_version: ${{ inputs.chart_version }}
