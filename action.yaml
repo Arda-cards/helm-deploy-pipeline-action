@@ -105,7 +105,7 @@ runs:
         
         standard_parameters() {
           if [ -z "$1" ]; then
-            file_name="${RUNNER_TEMP}/parameters.json"
+            file_name="${RUNNER_TEMP}/${2}.json"
             echo '[]' > "${file_name}"
           else
             file_name="$(realpath "$1")"
