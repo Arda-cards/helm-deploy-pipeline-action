@@ -3,7 +3,7 @@
 [![ci](https://github.com/Arda-cards/helm-deploy-pipeline-action/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/Arda-cards/helm-deploy-pipeline-action/actions/workflows/ci.yaml?query=branch%3Amain)
 [CHANGELOG.md](CHANGELOG.md)
 
-Given a set of pre/post CloudFormation, a helm chart and a cluster, install/update the cluster
+Given a set of pre- / post-CloudFormation, a helm chart and a cluster, install/update the cluster
 
 This action handles the complete deployment pipeline for a gradle project.
 
@@ -39,6 +39,49 @@ The files are json array:
 ]
 ```
 
+### Example
+
+Assuming following `pre-install.cfn.yml`,
+
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Grants AWS privileges to the service'
+
+Parameters:
+  GhcrPullKey:
+    Type: String
+    Description: "Concatenated(User, ':', PAT) that grants read access to GitHub OCI registry"
+    MinLength: 1
+    ConstraintDescription: "GhcrPullKey cannot be empty"
+    NoEcho: true
+
+Resources:
+  GhcrPullSecret:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Name: !Sub "GhcrPullSecret"
+      Description: "Grants pull access to the GitHub OCI registry"
+      SecretString: !Ref GhcrPullKey
+```
+
+this shell script, inlined in the GitHub job, reads a GitHub secret and saves it as the parameter `GhcrPullKey`.
+
+```shell
+[ "${{ runner.debug }}" == 1 ] && set -xv
+set -u
+
+pre_install_parameters() {
+  file_name="${RUNNER_TEMP}/pre.json"
+  echo "file_name_pre=$file_name" >>"${GITHUB_OUTPUT}"
+  echo '[]' |
+    jq --arg value "${{ secrets.GITHUB_REGISTRY_READ_SECRET }}"    '. += [{"ParameterKey": "GhcrPullKey", "ParameterValue": $value}]' \
+  > "${file_name}"
+}
+pre_install_parameters
+```
+
 ## Parametrizing Helm
 
 The action sets the following variables.
@@ -50,6 +93,29 @@ The action sets the following variables.
 | global.phase       | phase                       |
 
 If defined, the `helm_value` file is passed to Helm *after* the phase specific value.yaml from the project.
+
+### Example
+
+Assuming a Helm chart that needs `.Values.global.databaseURI` to contain the value available as the CloudFormation export `AuroraClusterUri`,
+this shell script, inlined in the GitHub job, reads the CloudFormation export and saves it as the global variable `databaseURI`.
+
+```shell
+[ "${{ runner.debug }}" == 1 ] && set -xv
+set -u
+
+function appendExport {
+  echo "${1}: $(aws cloudformation list-exports --query "Exports[?Name=='${2}'].Value" --output text)"
+}
+
+file_name=read-cloudFormation-values.yaml
+echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
+
+{
+echo "---"
+echo "global:"
+appendExport "  databaseURI" "AuroraClusterUri"
+} >${file_name}
+```
 
 ## Arguments
 
