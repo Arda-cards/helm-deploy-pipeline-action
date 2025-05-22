@@ -18,6 +18,14 @@ inputs:
     description: "Tell Helm to clean up failed deployment. Disable only while debugging deployment issue."
     required: false
     default: "true"
+  post_install_parameter:
+    description: "Name of a json file providing additional parameters for the post-install CloudFormation stacks"
+    required: false
+    default: ""
+  pre_install_parameter:
+    description: "Name of a json file providing additional parameters for the pre-install CloudFormation stacks"
+    required: false
+    default: ""
   cluster_name:
     description: "The name of the cluster"
     required: true
@@ -31,9 +39,14 @@ inputs:
   helm_registry:
     description: "The registry to retrieve Helm charts from"
     required: true
+  helm_value:
+    description: "Name of a helm value.yaml file providing additional values to helm"
+    required: false
+    default: ""
   image_pull_secret:
     description: "The secrets for kubernetes to pull images from the OCI registry"
     required: true
+    deprecationMessage: "Use the helm_value/cloudformation_parameter to pass if necessary"
   module_name:
     description: "The name of the module being deployed, it is the helm release name;
                   it also serves as the default base name for the kubernetes namespace. "
@@ -57,10 +70,10 @@ runs:
   steps:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: ${{ inputs.aws_role }}
-        aws-region: ${{ inputs.aws_region }}
+        role-to-assume: "${{ inputs.aws_role }}"
+        aws-region: "${{ inputs.aws_region }}"
         role-duration-seconds: 900
-    - id: account-information
+    - id: account_information
       name: "Extract account information"
       shell: bash
       run: |
@@ -69,41 +82,74 @@ runs:
 
         readonly name=$(aws --query AccountName --output text account get-account-information)
         echo "name=${name}" >>"${GITHUB_OUTPUT}"
+    - name: "Add default CloudFormation Parameters"
+      id: cloudformation_parameter
+      shell: bash
+      run: |
+        [ "${{ runner.debug }}" == 1 ] && set -xv
+        set -u
+
+        maybeAppend() {
+          echo "maybeAppend ${2} to ${1}"
+          mv "${1}" in.json
+          jq --arg key "${2}" --arg value "${3}" \
+            'if
+              map(.ParameterKey) | index($key) == null
+            then
+              . + [{"ParameterKey": $key, "ParameterValue": $value}]
+            else
+              .
+            end' in.json > "${1}"
+          rm in.json
+        }
+        
+        standard_parameters() {
+          if [ -z "${1}" ]; then
+            file_name="${RUNNER_TEMP}/${2}.json"
+            echo '[]' > "${file_name}"
+          else
+            file_name="$(realpath "${1}")"
+          fi
+          echo "${2}=file:///${file_name}" >>"${GITHUB_OUTPUT}"
+  
+          maybeAppend "${file_name}" "Environment" "${{ steps.account_information.outputs.name }}"
+          maybeAppend "${file_name}" "Module" "${{ inputs.module_name }}"
+          maybeAppend "${file_name}" "Namespace" "${{ inputs.namespace }}"
+        }
+
+        standard_parameters "${{ inputs.pre_install_parameter }}" pre_install_parameter
+        standard_parameters "${{ inputs.post_install_parameter }}" post_install_parameter
+
     - name: "Pre-install cloudformation"
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       if: ${{ hashFiles('src/main/cloudformation/pre-install.cfn.yml') != '' }}
       with:
         capabilities: "CAPABILITY_NAMED_IAM"
-        name: ${{ steps.account-information.outputs.name }}-${{ inputs.namespace }}-pre
+        name: "${{ steps.account_information.outputs.name }}-${{ inputs.namespace }}-pre"
         no-fail-on-empty-changeset: "1"
-        parameter-overrides: >-
-          Environment=${{ steps.account-information.outputs.name }},
-          Module=${{ inputs.module_name }},
-          Namespace=${{ inputs.namespace }},
-          GhcrPullKey=${{ inputs.image_pull_secret }}
-        tags: "[ { \"Key\":\"Environment\", \"Value\":\"${{ steps.account-information.outputs.name }}\" }]"
-        template: src/main/cloudformation/pre-install.cfn.yml
+        parameter-overrides: "${{ steps.cloudformation_parameter.outputs.pre_install_parameter }}"
+        tags: "[ { \"Key\":\"Environment\", \"Value\":\"${{ steps.account_information.outputs.name }}\" }]"
+        template: "src/main/cloudformation/pre-install.cfn.yml"
     - uses: Arda-cards/helm-deploy-action@v3
       with:
-        aws_role: ${{ inputs.aws_role }}
-        aws_region: ${{ inputs.aws_region }}
-        chart_name: ${{ inputs.chart_name }}
-        chart_version: ${{ inputs.chart_version }}
+        aws_region: "${{ inputs.aws_region }}"
+        chart_name: "${{ inputs.chart_name }}"
+        chart_version: "${{ inputs.chart_version }}"
         clean_up: ${{ inputs.clean_up }}
-        cluster_name: ${{ inputs.cluster_name }}
-        github_token: ${{ inputs.github_token }}
-        helm_registry: ${{ inputs.helm_registry }}
-        module_name: ${{ inputs.module_name }}
-        namespace: ${{ inputs.namespace }}
-        phase: ${{ inputs.phase }}
+        cluster_name: "${{ inputs.cluster_name }}"
+        github_token: "${{ inputs.github_token }}"
+        helm_registry: "${{ inputs.helm_registry }}"
+        module_name: "${{ inputs.module_name }}"
+        namespace: "${{ inputs.namespace }}"
+        phase: "${{ inputs.phase }}"
+        value_file: "${{ inputs.helm_value }}"
         verbose: true
     - name: "Post-install cloudformation"
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       if: ${{ hashFiles('src/main/cloudformation/post-install.cfn.yml') != '' }}
       with:
-        name: ${{ steps.account-information.outputs.name }}-${{ inputs.namespace }}-post
+        name: "${{ steps.account_information.outputs.name }}-${{ inputs.namespace }}-post"
         no-fail-on-empty-changeset: "1"
-        parameter-overrides: >-
-          Environment=${{ steps.account-information.outputs.name }}
-        tags: "[ { \"Key\":\"Environment\", \"Value\":\"${{ steps.account-information.outputs.name }}\" }]"
-        template: src/main/cloudformation/post-install.cfn.yml
+        parameter-overrides: "${{ steps.cloudformation_parameter.outputs.post_install_parameter }}"
+        tags: "[ { \"Key\":\"Environment\", \"Value\":\"${{ steps.account_information.outputs.name }}\" }]"
+        template: "src/main/cloudformation/post-install.cfn.yml"
