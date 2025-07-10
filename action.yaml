@@ -39,10 +39,6 @@ inputs:
     description: "Name of a helm value.yaml file providing additional values to helm"
     required: false
     default: ""
-  image_pull_secret:
-    description: "The secrets for kubernetes to pull images from the OCI registry"
-    required: true
-    deprecationMessage: "Use the helm_value/cloudformation_parameter to pass if necessary"
   namespace:
     description: "The name of the namespace to deploy to."
     required: true

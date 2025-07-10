@@ -147,7 +147,6 @@ jobs:
           cluster_name: "${{ vars.AWS_CLUSTER_NAME }}"
           github_token: "${{ github.token }}"
           helm_registry: "${{ vars.HELM_REGISTRY }}"
-          image_pull_secret: "${{ secrets.GPR_OCI_READ_SECRET }}"
           component_name: "${{ needs.build.outputs.component_name }}"
           namespace: "${{ matrix.environment }}-${{ needs.build.outputs.component_name }}"
           purpose: "${{ matrix.environment }}"

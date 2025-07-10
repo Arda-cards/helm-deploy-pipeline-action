@@ -25,6 +25,10 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 - Renamed *phase* to *purpose*.
 - Renamed *module* to *component*. This change also applies to the pre and post CloudFormation file.
 
+### Removed
+
+- Removed deprecated parameter `image_pull_secret`.
+
 ### Added
 
 - Pass the aws account name as the `environment` parameter to the Helm Deploy action
