@@ -18,6 +18,17 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [2.0.0] - 2025-07-10
+
+### Changed
+
+- Renamed _phase_ to _purpose_.
+- Renamed _module_ to _component_. This change also applies to the pre and post CloudFormation file.
+
+### Added
+
+- Pass the aws account name as the `environment` parameter to the Helm Deploy action
+
 ## [1.1.0] - 2025-05-15
 
 ### Added
