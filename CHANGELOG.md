@@ -33,6 +33,11 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 
 - Pass the aws account name as the `environment` parameter to the Helm Deploy action
 
+### Fixed
+
+- Rely on branch protection rule, not branch name.
+- Skip all work on draft pull requests.
+
 ## [1.1.0] - 2025-05-15
 
 ### Added
