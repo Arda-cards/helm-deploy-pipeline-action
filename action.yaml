@@ -18,16 +18,12 @@ inputs:
     description: "Tell Helm to clean up failed deployment. Disable only while debugging deployment issue."
     required: false
     default: "true"
-  post_install_parameter:
-    description: "Name of a json file providing additional parameters for the post-install CloudFormation stacks"
-    required: false
-    default: ""
-  pre_install_parameter:
-    description: "Name of a json file providing additional parameters for the pre-install CloudFormation stacks"
-    required: false
-    default: ""
   cluster_name:
     description: "The name of the cluster"
+    required: true
+  component_name:
+    description: "The name of the component being deployed, it is the helm release name;
+                  it also serves as the default base name for the kubernetes namespace. "
     required: true
   dry_run:
     description: "Set to true to perform a helm dry-run deployment"
@@ -47,15 +43,19 @@ inputs:
     description: "The secrets for kubernetes to pull images from the OCI registry"
     required: true
     deprecationMessage: "Use the helm_value/cloudformation_parameter to pass if necessary"
-  module_name:
-    description: "The name of the module being deployed, it is the helm release name;
-                  it also serves as the default base name for the kubernetes namespace. "
-    required: true
   namespace:
     description: "The name of the namespace to deploy to."
     required: true
-  phase:
-    description: "The phase in the deployment pipeline (dev, prod, ...)"
+  post_install_parameter:
+    description: "Name of a json file providing additional parameters for the post-install CloudFormation stacks"
+    required: false
+    default: ""
+  pre_install_parameter:
+    description: "Name of a json file providing additional parameters for the pre-install CloudFormation stacks"
+    required: false
+    default: ""
+  purpose:
+    description: "The purpose in the deployment pipeline (dev, prod, ...)"
     required: true
   timeout:
     description: "time to wait for the deployment to succeed (a Go duration, default 5m0s)"
@@ -113,13 +113,12 @@ runs:
           echo "${2}=file:///${file_name}" >>"${GITHUB_OUTPUT}"
   
           maybeAppend "${file_name}" "Environment" "${{ steps.account_information.outputs.name }}"
-          maybeAppend "${file_name}" "Module" "${{ inputs.module_name }}"
+          maybeAppend "${file_name}" "Component" "${{ inputs.component_name }}"
           maybeAppend "${file_name}" "Namespace" "${{ inputs.namespace }}"
         }
 
         standard_parameters "${{ inputs.pre_install_parameter }}" pre_install_parameter
         standard_parameters "${{ inputs.post_install_parameter }}" post_install_parameter
-
     - name: "Pre-install cloudformation"
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       if: ${{ hashFiles('src/main/cloudformation/pre-install.cfn.yml') != '' }}
@@ -130,18 +129,19 @@ runs:
         parameter-overrides: "${{ steps.cloudformation_parameter.outputs.pre_install_parameter }}"
         tags: "[ { \"Key\":\"Environment\", \"Value\":\"${{ steps.account_information.outputs.name }}\" }]"
         template: "src/main/cloudformation/pre-install.cfn.yml"
-    - uses: Arda-cards/helm-deploy-action@v3
+    - uses: Arda-cards/helm-deploy-action@dna/11
       with:
         aws_region: "${{ inputs.aws_region }}"
         chart_name: "${{ inputs.chart_name }}"
         chart_version: "${{ inputs.chart_version }}"
+        component_name: "${{ inputs.component_name }}"
         clean_up: ${{ inputs.clean_up }}
         cluster_name: "${{ inputs.cluster_name }}"
+        environment: "${{ steps.account_information.outputs.name }}"
         github_token: "${{ inputs.github_token }}"
         helm_registry: "${{ inputs.helm_registry }}"
-        module_name: "${{ inputs.module_name }}"
         namespace: "${{ inputs.namespace }}"
-        phase: "${{ inputs.phase }}"
+        purpose: "${{ inputs.purpose }}"
         value_file: "${{ inputs.helm_value }}"
         verbose: true
     - name: "Post-install cloudformation"

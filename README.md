@@ -13,7 +13,7 @@ This action expects the project to have been checked out already in the `github.
 |------------------------------------------------|----------|----------------------------------------------------------------|
 | `src/main/cloudformation/pre-install.cfn.yml`  | no       | If present, applied before the helm deployment                 |
 | `src/main/cloudformation/post-install.cfn.yml` | no       | If present, applied after the helm deployment                  |
-| `src/main/helm/`                               | yes      | `values.yaml` and `values-`*phase*`.yaml` configure the chart. |
+| `src/main/helm/`                               | yes      | `values.yaml` and `values-`*purpose*`.yaml` configure the chart. |
 
 The action will add a tag for `Environment` (see below) to every CloudFormation element created.
 
@@ -25,7 +25,7 @@ The action sets the following parameters for both the pre and the post install s
 |-------------|-----------------------------------------|
 | Environment | The name of the AWS account.            |
 | Namespace   | The name of the namespace to deploy to. |
-| Module      | The name of the module being deployed.  |
+| component      | The name of the component being deployed.  |
 
 Values from the `pre_install_parameter` and `post_install_parameter` file are added to the set.
 The files are json array:
@@ -90,9 +90,9 @@ The action sets the following variables.
 |--------------------|-----------------------------|
 | global.CLUSTER_IAM | arn:aws:iam::${cluster_iam} |
 | global.AWS_REGION  | aws_region                  |
-| global.phase       | phase                       |
+| global.purpose       | purpose                       |
 
-If defined, the `helm_value` file is passed to Helm *after* the phase specific value.yaml from the project.
+If defined, the `helm_value` file is passed to Helm *after* the purpose specific value.yaml from the project.
 
 ### Example
 
@@ -148,9 +148,9 @@ jobs:
           github_token: "${{ github.token }}"
           helm_registry: "${{ vars.HELM_REGISTRY }}"
           image_pull_secret: "${{ secrets.GPR_OCI_READ_SECRET }}"
-          module_name: "${{ needs.build.outputs.module_name }}"
-          namespace: "${{ matrix.environment }}-${{ needs.build.outputs.module_name }}"
-          phase: "${{ matrix.environment }}"
+          component_name: "${{ needs.build.outputs.component_name }}"
+          namespace: "${{ matrix.environment }}-${{ needs.build.outputs.component_name }}"
+          purpose: "${{ matrix.environment }}"
           verbose: true
 ```
 
