@@ -22,8 +22,8 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 
 ### Changed
 
-- Renamed _phase_ to _purpose_.
-- Renamed _module_ to _component_. This change also applies to the pre and post CloudFormation file.
+- Renamed *phase* to *purpose*.
+- Renamed *module* to *component*. This change also applies to the pre and post CloudFormation file.
 
 ### Added
 
