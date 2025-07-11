@@ -98,8 +98,7 @@ runs:
         fi
         if [ -n "${{ inputs.locator_url }}" ]; then
           readonly purpose_configuration="${RUNNER_TEMP}/locator.properties"
-          curl --output ${purpose_configuration} \
-            https://raw.githubusercontent.com/Arda-cards/purpose-configuration/refs/heads/dna/bastion/3/${{ inputs.purpose }}.properties?token=${{ secrets.ARDA_PURPOSE_CONFIGURATION_READER_TOKEN }}
+          curl --output ${purpose_configuration} ${{ inputs.locator_url }}
           
           cat ${purpose_configuration} 
           
