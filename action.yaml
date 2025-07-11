@@ -47,8 +47,9 @@ inputs:
     required: false
     default: ""
   namespace:
-    description: "The name of the namespace to deploy to."
-    required: true
+    description: "The name of the namespace to deploy to. Optional - at least for now"
+    required: false
+    default: ""
   post_install_parameter:
     description: "Name of a json file providing additional parameters for the post-install CloudFormation stacks"
     required: false
