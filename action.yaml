@@ -46,6 +46,10 @@ inputs:
     description: "The URL of properties file that defines aws_region, aws_role,cluster_name."
     required: false
     default: ""
+  locator_url_token:
+    description: "A token with read access to locator_url."
+    required: false
+    default: ""
   namespace:
     description: "The name of the namespace to deploy to. Optional - at least for now"
     required: false
@@ -93,17 +97,18 @@ runs:
           configureFrom "${1}" "$(sed -n -e "s/^${2:-$1}=//p" "${purpose_configuration}")"
         }
         
-        echo "###### INVESTIGATE"
-        env
-        echo "###### INVESTIGATE"
-
         if [ -n "${{ inputs.locator_url }}" ] && ( [ -n "${{ inputs.aws_region }}" ] || [ -n "${{ inputs.aws_role }}" ] || [ -n "${{ inputs.cluster_name }}" ] ); then
           echo "::error Can't have both locator_url and aws_region, aws_role. cluster_name"
           exit 1;
         fi
         if [ -n "${{ inputs.locator_url }}" ]; then
           readonly purpose_configuration="${RUNNER_TEMP}/locator.properties"
-          curl --output ${purpose_configuration} ${{ inputs.locator_url }}
+          @headers=("--header" "Accept: application/vnd.github.v3.raw")
+          [ -n "${{ inputs.locator_url_token }}" ] && headers+=("--header" "Authorization: token ${{ inputs.locator_url_token }}")
+          curl  --location \
+            ${headers[@]} \
+            --output ${purpose_configuration} \
+            ${{ inputs.locator_url }}
           
           cat ${purpose_configuration} 
           
