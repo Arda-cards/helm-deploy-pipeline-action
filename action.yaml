@@ -113,7 +113,7 @@ runs:
         else
           echo "::error Must define either locator_url or aws_region, aws_role, cluster_name"
           exit 1;
-        if
+        fi
         
         # HACK!
         case ${{ inputs.purpose }} in
@@ -133,7 +133,7 @@ runs:
       name: "Extract account information"
       shell: bash
       run: |
-        [ "${{ runner.debug }}" == 1 ] && set -xv
+        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
         set -u
 
         readonly name=$(aws --query AccountName --output text account get-account-information)
@@ -142,7 +142,7 @@ runs:
       id: cloudformation_parameter
       shell: bash
       run: |
-        [ "${{ runner.debug }}" == 1 ] && set -xv
+        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
         set -u
 
         maybeAppend() {
