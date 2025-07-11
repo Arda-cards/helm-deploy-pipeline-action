@@ -92,6 +92,10 @@ runs:
           # $2: variable name in the configuration file; defaults to github's variable name 
           configureFrom "${1}" "$(sed -n -e "s/^${2:-$1}=//p" "${purpose_configuration}")"
         }
+        
+        echo "###### INVESTIGATE"
+        env
+        echo "###### INVESTIGATE"
 
         if [ -n "${{ inputs.locator_url }}" ] && ( [ -n "${{ inputs.aws_region }}" ] || [ -n "${{ inputs.aws_role }}" ] || [ -n "${{ inputs.cluster_name }}" ] ); then
           echo "::error Can't have both locator_url and aws_region, aws_role. cluster_name"
