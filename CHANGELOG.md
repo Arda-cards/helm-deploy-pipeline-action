@@ -32,6 +32,7 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 ### Added
 
 - Pass the aws account name as the `environment` parameter to the Helm Deploy action
+- New parameter `locator_url` to identify a locator file with the optional authentication parameters `locator_url_bearer`, `locator_url_token`.
 
 ### Fixed
 

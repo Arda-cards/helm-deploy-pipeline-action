@@ -69,7 +69,7 @@ Resources:
 this shell script, inlined in the GitHub job, reads a GitHub secret and saves it as the parameter `GhcrPullKey`.
 
 ```shell
-[ "${{ runner.debug }}" == 1 ] && set -xv
+[ "${RUNNER_DEBUG}" == 1 ] && set -xv
 set -u
 
 pre_install_parameters() {
@@ -100,7 +100,7 @@ Assuming a Helm chart that needs `.Values.global.databaseURI` to contain the val
 this shell script, inlined in the GitHub job, reads the CloudFormation export and saves it as the global variable `databaseURI`.
 
 ```shell
-[ "${{ runner.debug }}" == 1 ] && set -xv
+[ "${RUNNER_DEBUG}" == 1 ] && set -xv
 set -u
 
 function appendExport {

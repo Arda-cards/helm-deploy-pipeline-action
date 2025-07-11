@@ -2,12 +2,14 @@
 name: gradle-build-pipeline
 description: "Checkout, build and tag gradle projects"
 inputs:
-  aws_role:
-    description: "The AWS role for the connection"
-    required: true
   aws_region:
     description: "The AWS region to deploy to"
-    required: true
+    required: false
+    default: ""
+  aws_role:
+    description: "The AWS role for the connection"
+    required: false
+    default: ""
   chart_name:
     description: "The name of the chart to deploy "
     required: true
@@ -20,7 +22,8 @@ inputs:
     default: "true"
   cluster_name:
     description: "The name of the cluster"
-    required: true
+    required: false
+    default: ""
   component_name:
     description: "The name of the component being deployed, it is the helm release name;
                   it also serves as the default base name for the kubernetes namespace. "
@@ -39,9 +42,22 @@ inputs:
     description: "Name of a helm value.yaml file providing additional values to helm"
     required: false
     default: ""
+  locator_url:
+    description: "The URL of properties file that defines aws_region, aws_role,cluster_name."
+    required: false
+    default: ""
+  locator_url_bearer:
+    description: "A authentication bearer with read access to locator_url."
+    required: false
+    default: ""
+  locator_url_token:
+    description: "An authentication token with read access to locator_url."
+    required: false
+    default: ""
   namespace:
-    description: "The name of the namespace to deploy to."
-    required: true
+    description: "The name of the namespace to deploy to. Optional - at least for now"
+    required: false
+    default: ""
   post_install_parameter:
     description: "Name of a json file providing additional parameters for the post-install CloudFormation stacks"
     required: false
@@ -64,16 +80,69 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: "Extract purpose configuration"
+      id: purpose_config
+      shell: bash
+      run: |
+        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        set -u
+        
+        function configureFrom() {
+          # configure $1 = $2:
+          # $1: github variable name
+          # $2: value 
+          echo "${1}=${2}" >>"${GITHUB_OUTPUT}"
+        }
+
+        function configureFromLocator() {
+          # configure $1 from $2:
+          # $1: github variable name
+          # $2: variable name in the configuration file; defaults to github's variable name 
+          configureFrom "${1}" "$(sed -n -e "s/^${2:-$1}=//p" "${purpose_configuration}")"
+        }
+        
+        if [ -n "${{ inputs.locator_url }}" ] && ( [ -n "${{ inputs.aws_region }}" ] || [ -n "${{ inputs.aws_role }}" ] || [ -n "${{ inputs.cluster_name }}" ] ); then
+          echo "::error Can't have both locator_url and aws_region, aws_role, cluster_name parameters"
+          exit 1;
+        elif [ -n "${{ inputs.locator_url }}" ]; then
+          readonly purpose_configuration="${RUNNER_TEMP}/locator.properties"
+          readonly headers="${RUNNER_TEMP}/headers"
+
+          rm -f "${headers}"
+          if [[ "${{ inputs.locator_url }}" == "https://api.github.com/repos/"* ]]; then
+            echo "Accept: application/vnd.github.raw" >>"${headers}"
+            echo "X-GitHub-Api-Version: 2022-11-28" >>"${headers}"
+          fi
+          [ -n "${{ inputs.locator_url_bearer }}" ] && echo "Authorization: Bearer ${{ inputs.locator_url_bearer }}" >>"${headers}"
+          [ -n "${{ inputs.locator_url_token }}" ] && echo "Authorization: token ${{ inputs.locator_url_token }}" >>"${headers}"
+          curl  --location \
+            --header @${headers} \
+            --output "${purpose_configuration}" \
+            "${{ inputs.locator_url }}"
+          
+          cat ${purpose_configuration} 
+          
+          configureFromLocator aws_role
+          configureFromLocator aws_region
+          configureFromLocator cluster_name
+        elif [ -n "${{ inputs.aws_region }}" ] && [ -n "${{ inputs.aws_role }}" ] && [ -n "${{ inputs.cluster_name }}" ]; then
+          configureFromLocator aws_role "${{ inputs.aws_role }}"
+          configureFromLocator aws_region "${{ inputs.aws_region }}"
+          configureFromLocator cluster_name "${{ inputs.cluster_name }}"
+        else
+          echo "::error Must define either locator_url or aws_region, aws_role, cluster_name"
+          exit 1;
+        fi
     - uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: "${{ inputs.aws_role }}"
-        aws-region: "${{ inputs.aws_region }}"
+        role-to-assume: "${{ steps.purpose_config.outputs.aws_role }}"
+        aws-region: "${{ steps.purpose_config.outputs.aws_region }}"
         role-duration-seconds: 900
     - id: account_information
       name: "Extract account information"
       shell: bash
       run: |
-        [ "${{ runner.debug }}" == 1 ] && set -xv
+        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
         set -u
 
         readonly name=$(aws --query AccountName --output text account get-account-information)
@@ -82,7 +151,7 @@ runs:
       id: cloudformation_parameter
       shell: bash
       run: |
-        [ "${{ runner.debug }}" == 1 ] && set -xv
+        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
         set -u
 
         maybeAppend() {
@@ -127,12 +196,12 @@ runs:
         template: "src/main/cloudformation/pre-install.cfn.yml"
     - uses: Arda-cards/helm-deploy-action@dna/11
       with:
-        aws_region: "${{ inputs.aws_region }}"
+        aws_region: "${{ steps.purpose_config.outputs.aws_region }}"
         chart_name: "${{ inputs.chart_name }}"
         chart_version: "${{ inputs.chart_version }}"
         component_name: "${{ inputs.component_name }}"
         clean_up: ${{ inputs.clean_up }}
-        cluster_name: "${{ inputs.cluster_name }}"
+        cluster_name: "${{ steps.purpose_config.outputs.cluster_name }}"
         environment: "${{ steps.account_information.outputs.name }}"
         github_token: "${{ inputs.github_token }}"
         helm_registry: "${{ inputs.helm_registry }}"
