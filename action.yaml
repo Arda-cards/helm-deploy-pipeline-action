@@ -208,7 +208,7 @@ runs:
         namespace: "${{ inputs.namespace }}"
         purpose: "${{ inputs.purpose }}"
         value_file: "${{ inputs.helm_value }}"
-        verbose: true
+        verbose: "${{ inputs.verbose }}"
     - name: "Post-install cloudformation"
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       if: ${{ hashFiles('src/main/cloudformation/post-install.cfn.yml') != '' }}
