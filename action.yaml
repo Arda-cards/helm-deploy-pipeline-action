@@ -38,8 +38,8 @@ inputs:
   helm_registry:
     description: "The registry to retrieve Helm charts from"
     required: true
-  helm_value:
-    description: "Name of a helm value.yaml file providing additional values to helm"
+  helm_value_command:
+    description: "Name of a file providing a set of (action key value) for additional values to helm"
     required: false
     default: ""
   locator_url:
@@ -184,6 +184,54 @@ runs:
 
         standard_parameters "${{ inputs.pre_install_parameter }}" pre_install_parameter
         standard_parameters "${{ inputs.post_install_parameter }}" post_install_parameter
+    - name: "Parametrize Helm values from CloudFormationExports"
+      id: helm_value
+      shell: bash
+      run: |
+        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        set -u
+
+        function readExport {
+          local value="$(aws cloudformation list-exports --query "Exports[?Name=='${2}'].Value" --output text)"
+          echo "${1}: ${value#*|::|}"
+        }
+
+        # ARN for secret name:
+        # arn:aws:secretsmanager:${region}:${account}:secret:${secret_name}-${version}
+        function readSecretName {
+          local value="$(aws cloudformation list-exports --query "Exports[?Name=='${2}'].Value" --output text)"
+          local secret_arn="${value#*|::|}"
+          local secret_long_name=${secret_arn##*:secret:}
+          echo "${1}: ${secret_long_name%-*}"
+        }
+
+        if [[ -f ${{ inputs.helm_value_command }} && -r ${{ inputs.helm_value_command }} ]]; then
+          file_name=${RUNNER_TEMP}/read-cloudFormation-values.yaml
+          echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
+          echo "---" >|${file_name}
+  
+          # read file line by line and write command to set *Key* to *Action* *Value*.   Field separator is ":"
+          while read -r a k v; do
+            case $a in
+               copyValue)
+                echo "${k}: ${v}" >>${file_name}
+              ;;
+               readExport)
+                readExport $k $v >>${file_name}
+              ;;
+               readSecretName)
+                readSecretName $k $v >>${file_name}
+              ;;
+              *)
+                echo "::error function $f unkonwn (readExport, readSecretName)"
+                exit 1
+              ;;
+            esac
+          done <"${{ inputs.helm_value_command }}"
+
+          echo "${file_name}:"
+          cat "${file_name}"
+        fi
     - name: "Pre-install cloudformation"
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       if: ${{ hashFiles('src/main/cloudformation/pre-install.cfn.yml') != '' }}
@@ -207,7 +255,7 @@ runs:
         helm_registry: "${{ inputs.helm_registry }}"
         namespace: "${{ inputs.namespace }}"
         purpose: "${{ inputs.purpose }}"
-        value_file: "${{ inputs.helm_value }}"
+        value_file: "${{ steps.helm_value.outputs.file_name }}"
         verbose: "${{ inputs.verbose }}"
     - name: "Post-install cloudformation"
       uses: aws-actions/aws-cloudformation-github-deploy@v1

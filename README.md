@@ -3,29 +3,48 @@
 [![ci](https://github.com/Arda-cards/helm-deploy-pipeline-action/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/Arda-cards/helm-deploy-pipeline-action/actions/workflows/ci.yaml?query=branch%3Amain)
 [CHANGELOG.md](CHANGELOG.md)
 
-Given a set of pre- / post-CloudFormation, a helm chart and a cluster, install/update the cluster
+Given a set of pre- / post-CloudFormation, a helm chart and a cluster, install/update the cluster.
 
 This action handles the complete deployment pipeline for a gradle project.
 
 This action expects the project to have been checked out already in the `github.workspace` and will look for:
 
-| file                                           | required | description                                                    |
-|------------------------------------------------|----------|----------------------------------------------------------------|
-| `src/main/cloudformation/pre-install.cfn.yml`  | no       | If present, applied before the helm deployment                 |
-| `src/main/cloudformation/post-install.cfn.yml` | no       | If present, applied after the helm deployment                  |
+| file                                           | required | description                                                      |
+|------------------------------------------------|----------|------------------------------------------------------------------|
+| `src/main/cloudformation/pre-install.cfn.yml`  | no       | If present, applied before the helm deployment                   |
+| `src/main/cloudformation/post-install.cfn.yml` | no       | If present, applied after the helm deployment                    |
 | `src/main/helm/`                               | yes      | `values.yaml` and `values-`*purpose*`.yaml` configure the chart. |
 
 The action will add a tag for `Environment` (see below) to every CloudFormation element created.
+
+## Locating the cluster
+
+The action needs the triplet of an *aws role*, an *aws region* and a *cluster name* to locate the cluster for deployment.
+These can be passed in as three parameters or, better, through a `locator_url` with optional `locator_url_bearer` or `locator_url_token`;
+it is an error to pass both the three parameters `aws_region`, `aws_role` and `cluster_name`, and the `locator_url` at the same time.
+
+The `locator_url` is the URL of a simple properties file that contains the required triplet as
+
+```properties
+aws_role=arn:aws:iam::account_id:role/role_name
+aws_region=us-east-0
+cluster_name=...
+```
+
+If `locator_url` identifies a GitHub repository, appropriate headers are added to the `GET` request.
+
+If `locator_url_bearer` or `locator_url_token`, the headers `Authorization: Bearer` or `Authorization: Token` are added to the `GET` request.
+If both parameters are present, both headers are added and behavior is defined by the server.
 
 ## Parametrizing CloudFormation
 
 The action sets the following parameters for both the pre and the post install stacks.
 
-| name        | description                             |
-|-------------|-----------------------------------------|
-| Environment | The name of the AWS account.            |
-| Namespace   | The name of the namespace to deploy to. |
-| component      | The name of the component being deployed.  |
+| name        | description                               |
+|-------------|-------------------------------------------|
+| Environment | The name of the AWS account.              |
+| Namespace   | The name of the namespace to deploy to.   |
+| component   | The name of the component being deployed. |
 
 Values from the `pre_install_parameter` and `post_install_parameter` file are added to the set.
 The files are json array:
@@ -84,36 +103,43 @@ pre_install_parameters
 
 ## Parametrizing Helm
 
+### Pre-set values
+
 The action sets the following variables.
 
-| name               | description                 |
-|--------------------|-----------------------------|
-| global.CLUSTER_IAM | arn:aws:iam::${cluster_iam} |
-| global.AWS_REGION  | aws_region                  |
-| global.purpose       | purpose                       |
+| name              | description                 |
+|-------------------|-----------------------------|
+| global.awsRegion  | aws_region                  |
+| global.clusterIam | arn:aws:iam::${cluster_iam} |
+| global.purpose    | purpose                     |
 
-If defined, the `helm_value` file is passed to Helm *after* the purpose specific value.yaml from the project.
+### Helm value commands
 
-### Example
+If defined, the `helm_value_command` file is executed and the resulting `helm_value` passed to Helm *after* the purpose specific `value.yaml` from the project.
+The `helm_value_command` file is simple list of tuples *action, key, value*.
+
+| action         | description                                                                                 |
+|----------------|---------------------------------------------------------------------------------------------|
+| copyValue      | sets the *key* to the *value*                                                               |
+| readExport     | sets the *key* to the CloudFormation export named *value*                                   |
+| readSecretName | sets the *key* to the name of the secret defined by the CloudFormation export named *value* |
+
+The command strips any prefix that matches `.*|::|` from the value read from CloudFormation.
+
+#### Example
 
 Assuming a Helm chart that needs `.Values.global.databaseURI` to contain the value available as the CloudFormation export `AuroraClusterUri`,
-this shell script, inlined in the GitHub job, reads the CloudFormation export and saves it as the global variable `databaseURI`.
+this shell script, inlined in the GitHub job, describes the CloudFormation exports to read and the  Helm variable `databaseURI` to set.
 
 ```shell
 [ "${RUNNER_DEBUG}" == 1 ] && set -xv
 set -u
 
-function appendExport {
-  echo "${1}: $(aws cloudformation list-exports --query "Exports[?Name=='${2}'].Value" --output text)"
-}
-
 file_name=read-cloudFormation-values.yaml
 echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
 
 {
-echo "---"
-echo "global:"
-appendExport "  databaseURI" "AuroraClusterUri"
+echo appendExport "databaseURI" "AuroraClusterUri"
 } >${file_name}
 ```
 
@@ -137,7 +163,7 @@ jobs:
     environment: "${{ matrix.environment }}"
     steps:
       - uses: actions/checkout@v4
-      - uses: Arda-carda/helm-deploy-pipeline-action@dna/1
+      - uses: Arda-carda/helm-deploy-pipeline-action@dna/2
         with:
           aws_role: "${{ vars.AWS_ROLE }}"
           aws_region: "${{ vars.AWS_REGION }}"
