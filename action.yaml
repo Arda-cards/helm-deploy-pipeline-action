@@ -191,22 +191,22 @@ runs:
         [ "${RUNNER_DEBUG}" == 1 ] && set -xv
         set -u
 
-        function appendExport {
+        function readExport {
           local value="$(aws cloudformation list-exports --query "Exports[?Name=='${{ steps.account_information.outputs.name }}-${2}'].Value" --output text)"
-          yq -i "${1} = ${value#*|::|}" "${3}"
+          yq -i "${1} = \"${value#*|::|}\"" "${3}"
         }
 
         # ARN for secret name:
         # arn:aws:secretsmanager:${region}:${account}:secret:${secret_name}-${version}
-        function appendSecretName {
+        function readSecretName {
           local value="$(aws cloudformation list-exports --query "Exports[?Name=='${{ steps.account_information.outputs.name }}-${2}'].Value" --output text)"
           local secret_arn="${value#*|::|}"
           local secret_long_name=${secret_arn##*:secret:}
-          yq -i "${1} = ${secret_long_name%-*}" "${3}"
+          yq -i "${1} =\"${secret_long_name%-*}\"" "${3}"
         }
 
         if [[ -f ${{ inputs.helm_value_command }} && -r ${{ inputs.helm_value_command }} ]]; then
-          file_name=${RUNNER_TEMP}/read-cloudFormation-values.yaml
+          file_name=cloudFormation-values.yaml
           echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
           echo "---" >|${file_name}
   
@@ -214,7 +214,7 @@ runs:
           while read -r a k v; do
             case $a in
               copyValue)
-                yq -i "${k} = ${v}" ${file_name}
+                yq -i "${k} = \"${v}\"" ${file_name}
               ;;
               readExport)
                 appendExport $k $v ${file_name}

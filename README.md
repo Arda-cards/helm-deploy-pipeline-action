@@ -47,7 +47,7 @@ The action sets the following parameters for both the pre and the post install s
 | component   | The name of the component being deployed. |
 
 Values from the `pre_install_parameter` and `post_install_parameter` file are added to the set.
-The files are json array:
+The files are JSON array:
 
 ```json
 [
@@ -115,8 +115,8 @@ The action sets the following variables.
 
 ### Helm value commands
 
-If defined, the `helm_value_command` file is executed and the resulting `helm_value` passed to Helm *after* the purpose specific `value.yaml` from the project.
-The `helm_value_command` file is simple list of tuples *action, key, value*.
+If defined, the `helm_value_command` file is executed and the resulting `helm_value` passed to Helm *after* the purpose specific `value.yaml`
+from the project. The `helm_value_command` file is simple list of tuples *action, key, value*.
 
 | action         | description                                                                                 |
 |----------------|---------------------------------------------------------------------------------------------|
@@ -139,9 +139,12 @@ file_name=read-cloudFormation-values.yaml
 echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
 
 {
-echo appendExport "databaseURI" "AuroraClusterUri"
+echo appendExport ".global.databaseURI" "AuroraClusterUri"
 } >${file_name}
 ```
+
+Note that Helm variable name is a path in the YAML file and, therefore, needs to start with a `.`;
+refer to [yq](https://mikefarah.gitbook.io/yq) for more details.
 
 ## Arguments
 
