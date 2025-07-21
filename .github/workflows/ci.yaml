@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
       - run: cat .github/super-linter.env >> "$GITHUB_ENV"
-      - uses: super-linter/super-linter@v7
+      - uses: super-linter/super-linter@v8
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   is-target-branch-protected:
@@ -36,7 +36,9 @@ jobs:
           [ "${RUNNER_DEBUG}" == 1 ] && set -xv
           set -u
 
-          if gh ruleset check --repo "${GITHUB_REPOSITORY}" "${GITHUB_BASE_REF:-$GITHUB_REF_NAME}" | grep -q context:validate-release; then
+          if gh ruleset check --repo "${GITHUB_REPOSITORY}" "${GITHUB_BASE_REF:-$GITHUB_REF_NAME}" \
+            | grep -q context:validate-release; \
+          then
             echo "validate_in_list=true" >>"${GITHUB_OUTPUT}"
           fi
   validate-release:

@@ -119,9 +119,9 @@ runs:
             --header @${headers} \
             --output "${purpose_configuration}" \
             "${{ inputs.locator_url }}"
-          
+        
           cat ${purpose_configuration} 
-          
+        
           configureFromLocator aws_role
           configureFromLocator aws_region
           configureFromLocator cluster_name
@@ -176,7 +176,7 @@ runs:
             file_name="$(realpath "${1}")"
           fi
           echo "${2}=file:///${file_name}" >>"${GITHUB_OUTPUT}"
-  
+
           maybeAppend "${file_name}" "Environment" "${{ steps.account_information.outputs.name }}"
           maybeAppend "${file_name}" "Component" "${{ inputs.component_name }}"
           maybeAppend "${file_name}" "Namespace" "${{ inputs.namespace }}"
@@ -209,7 +209,7 @@ runs:
           file_name=cloudFormation-values.yaml
           echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
           echo "---" >|${file_name}
-  
+
           # read file line by line and write command to set *Key* to *Action* *Value*.   Field separator is ":"
           while read -r a k v; do
             case $a in
@@ -217,10 +217,10 @@ runs:
                 yq -i "${k} = \"${v}\"" ${file_name}
               ;;
               readExport)
-                appendExport $k $v ${file_name}
+                readExport $k $v ${file_name}
               ;;
               readSecretName)
-                appendSecretName $k $v ${file_name}
+                readSecretName $k $v ${file_name}
               ;;
               *)
                 echo "::error function $f unkonwn (readExport, readSecretName)"
