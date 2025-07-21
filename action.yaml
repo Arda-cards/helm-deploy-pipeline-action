@@ -191,18 +191,18 @@ runs:
         [ "${RUNNER_DEBUG}" == 1 ] && set -xv
         set -u
 
-        function readExport {
-          local value="$(aws cloudformation list-exports --query "Exports[?Name=='${2}'].Value" --output text)"
-          echo "${1}: ${value#*|::|}"
+        function appendExport {
+          local value="$(aws cloudformation list-exports --query "Exports[?Name=='${{ steps.account_information.outputs.name }}-${2}'].Value" --output text)"
+          yq -i "${1} = ${value#*|::|}" "${3}"
         }
 
         # ARN for secret name:
         # arn:aws:secretsmanager:${region}:${account}:secret:${secret_name}-${version}
-        function readSecretName {
-          local value="$(aws cloudformation list-exports --query "Exports[?Name=='${2}'].Value" --output text)"
+        function appendSecretName {
+          local value="$(aws cloudformation list-exports --query "Exports[?Name=='${{ steps.account_information.outputs.name }}-${2}'].Value" --output text)"
           local secret_arn="${value#*|::|}"
           local secret_long_name=${secret_arn##*:secret:}
-          echo "${1}: ${secret_long_name%-*}"
+          yq -i "${1} = ${secret_long_name%-*}" "${3}"
         }
 
         if [[ -f ${{ inputs.helm_value_command }} && -r ${{ inputs.helm_value_command }} ]]; then
@@ -213,14 +213,14 @@ runs:
           # read file line by line and write command to set *Key* to *Action* *Value*.   Field separator is ":"
           while read -r a k v; do
             case $a in
-               copyValue)
-                echo "${k}: ${v}" >>${file_name}
+              copyValue)
+                yq -i "${k} = ${v}" ${file_name}
               ;;
-               readExport)
-                readExport $k $v >>${file_name}
+              readExport)
+                appendExport $k $v ${file_name}
               ;;
-               readSecretName)
-                readSecretName $k $v >>${file_name}
+              readSecretName)
+                appendSecretName $k $v ${file_name}
               ;;
               *)
                 echo "::error function $f unkonwn (readExport, readSecretName)"
