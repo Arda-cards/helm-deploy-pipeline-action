@@ -35,6 +35,7 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 - Pass the aws account name as the `environment` parameter to the Helm Deploy action
 - New parameter `locator_url` to identify a locator file with the optional authentication parameters `locator_url_bearer`, `locator_url_token`.
 - New parameter `helm_value_command`, a list of `action`, `key`, `value` that writes a file that set the Helm `key` to `action` for `value`.
+- `Purpose` added to the standard CloudFormation parameters.
 
 ### Fixed
 

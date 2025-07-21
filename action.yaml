@@ -177,9 +177,10 @@ runs:
           fi
           echo "${2}=file:///${file_name}" >>"${GITHUB_OUTPUT}"
 
-          maybeAppend "${file_name}" "Environment" "${{ steps.account_information.outputs.name }}"
           maybeAppend "${file_name}" "Component" "${{ inputs.component_name }}"
+          maybeAppend "${file_name}" "Environment" "${{ steps.account_information.outputs.name }}"
           maybeAppend "${file_name}" "Namespace" "${{ inputs.namespace }}"
+          maybeAppend "${file_name}" "Purpose" "${{ inputs.purpose }}"
         }
 
         standard_parameters "${{ inputs.pre_install_parameter }}" pre_install_parameter
