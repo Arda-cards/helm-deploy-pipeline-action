@@ -24,6 +24,7 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 
 - Renamed *phase* to *purpose*.
 - Renamed *module* to *component*. This change also applies to the pre and post CloudFormation file.
+- Bump `helm-deploy-action` from v3 to v4
 
 ### Removed
 
@@ -41,7 +42,7 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 
 - Rely on branch protection rule, not branch name.
 - Skip all work on draft pull requests.
-- Bump super-linter from 7 to 8
+- Bump `super-linter` from 7 to 8
 
 ## [1.1.0] - 2025-05-15
 
