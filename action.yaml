@@ -187,6 +187,7 @@ runs:
         standard_parameters "${{ inputs.post_install_parameter }}" post_install_parameter
     - name: "Parametrize Helm values from CloudFormationExports"
       id: helm_value
+      if: ${{ inputs.helm_value_command }}
       shell: bash
       run: |
         [ "${RUNNER_DEBUG}" == 1 ] && set -xv
