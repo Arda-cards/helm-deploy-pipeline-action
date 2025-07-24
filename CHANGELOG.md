@@ -1,7 +1,7 @@
 # changelog
 
 [![Keep a Changelog](https://img.shields.io/badge/Keep%20a%20Changelog-1.0.0-informational)](https://keepachangelog.com/en/1.0.0/)
-[![Semantic Versioning](https://img.shields.io/badge/Sematic%20Versioning-2.0.0-informational)](https://semver.org/spec/v2.0.0.html)
+[![Semantic Versioning](https://img.shields.io/badge/Semantic%20Versioning-2.0.0-informational)](https://semver.org/spec/v2.0.0.html)
 ![clq validated](https://img.shields.io/badge/clq-validated-success)
 
 Keep the newest entry at top, format date according to ISO 8601: `YYYY-MM-DD`.
@@ -17,6 +17,32 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 - *bugfix* release trigger:
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
+
+## [2.0.0] - 2025-07-23
+
+### Changed
+
+- Renamed *phase* to *purpose*.
+- Renamed *module* to *component*. This change also applies to the pre and post CloudFormation file.
+- Bump `helm-deploy-action` from v3 to v4
+
+### Removed
+
+- Removed deprecated parameter `image_pull_secret`.
+- Removed parameter `helm_value`.
+
+### Added
+
+- Pass the aws account name as the `environment` parameter to the Helm Deploy action
+- New parameter `locator_url` to identify a locator file with the optional authentication parameters `locator_url_bearer`, `locator_url_token`.
+- New parameter `helm_value_command`, a list of `action`, `key`, `value` that writes a file that set the Helm `key` to `action` for `value`.
+- `Purpose` added to the standard CloudFormation parameters.
+
+### Fixed
+
+- Rely on branch protection rule, not branch name.
+- Skip all work on draft pull requests.
+- Bump `super-linter` from 7 to 8
 
 ## [1.1.0] - 2025-05-15
 
