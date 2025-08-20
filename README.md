@@ -5,7 +5,7 @@
 
 Given a set of pre- / post-CloudFormation, a helm chart and a cluster, install/update the cluster.
 
-This action handles the complete deployment pipeline for a gradle project.
+This action handles the complete deployment pipeline for a gradle project, including [deployment gate](https://github.com/Arda-cards/deployment-gate-action) if [configured for the purpose](https://github.com/Arda-cards/purpose-configuration-action).
 
 This action expects the project to have been checked out already in the `github.workspace` and will look for:
 

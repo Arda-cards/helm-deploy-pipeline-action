@@ -20,6 +20,10 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 
 ## [2.0.1] - 2025-08-20
 
+### Added
+
+- Include `Arda-cards/deployment-gate-action` if the purpose defines `deployment_gate` with a value other than `none`
+
 ### Fixed
 
 - Bump `actions/checkout` from 4 to 5
