@@ -15,7 +15,7 @@ This action expects the project to have been checked out already in the `github.
 | `src/main/cloudformation/post-install.cfn.yml` | no       | If present, applied after the helm deployment                    |
 | `src/main/helm/`                               | yes      | `values.yaml` and `values-`*purpose*`.yaml` configure the chart. |
 
-The action will add a tag for `Environment` (see below) to every CloudFormation element created.
+The action will add tags for `Infrastructure` (see below) to every CloudFormation element created.
 
 ## Locating the cluster
 
@@ -40,11 +40,11 @@ If both parameters are present, both headers are added and behavior is defined b
 
 The action sets the following parameters for both the pre and the post install stacks.
 
-| name        | description                               |
-|-------------|-------------------------------------------|
-| Environment | The name of the AWS account.              |
-| Namespace   | The name of the namespace to deploy to.   |
-| component   | The name of the component being deployed. |
+| name           | description                               |
+|----------------|-------------------------------------------|
+| Infrastructure | The name of the AWS account.              |
+| Namespace      | The name of the namespace to deploy to.   |
+| Component      | The name of the component being deployed. |
 
 Values from the `pre_install_parameter` and `post_install_parameter` file are added to the set.
 The files are JSON array:
@@ -162,11 +162,11 @@ jobs:
       packages: read
     strategy:
       matrix:
-        environment: [ dev ]
-    environment: "${{ matrix.environment }}"
+        purpose: [ dev ]
+    environment: "${{ matrix.purpose }}"
     steps:
-      - uses: actions/checkout@v4
-      - uses: Arda-carda/helm-deploy-pipeline-action@dna/2
+      - uses: actions/checkout@v5
+      - uses: Arda-carda/helm-deploy-pipeline-action@v2
         with:
           aws_role: "${{ vars.AWS_ROLE }}"
           aws_region: "${{ vars.AWS_REGION }}"
@@ -177,8 +177,8 @@ jobs:
           github_token: "${{ github.token }}"
           helm_registry: "${{ vars.HELM_REGISTRY }}"
           component_name: "${{ needs.build.outputs.component_name }}"
-          namespace: "${{ matrix.environment }}-${{ needs.build.outputs.component_name }}"
-          purpose: "${{ matrix.environment }}"
+          namespace: "${{ matrix.purpose }}-${{ needs.build.outputs.component_name }}"
+          purpose: "${{ matrix.purpose }}"
           verbose: true
 ```
 
