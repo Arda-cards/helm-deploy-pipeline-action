@@ -32,7 +32,8 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 
 ### Fixed
 
-- Bump `actions/checkout` from 4 to 5
+- Bump `actions/checkout` from 4 to 5.
+- Bump `Arda-cards/helm-deploy-action` from 4 to 5
 
 ## [2.0.0] - 2025-07-23
 

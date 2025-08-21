@@ -212,7 +212,7 @@ runs:
         parameter-overrides: "${{ steps.cloudformation_parameter.outputs.pre_install_parameter }}"
         tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
         template: "src/main/cloudformation/pre-install.cfn.yml"
-    - uses: Arda-cards/helm-deploy-action@dna/13
+    - uses: Arda-cards/helm-deploy-action@v5
       with:
         aws_region: "${{ steps.purpose_config.outputs.aws_region }}"
         chart_name: "${{ inputs.chart_name }}"
