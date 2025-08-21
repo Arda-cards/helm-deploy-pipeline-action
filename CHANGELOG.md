@@ -18,6 +18,23 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [3.0.0] - 2025-08-20
+
+### Removed
+
+- CloudFormation parameter `Environment`.
+
+### Added
+
+- Include `Arda-cards/deployment-gate-action` if the purpose defines `deployment_gate` with a value other than `none`
+- CloudFormation parameter `Infrastructure`.
+- Helm value `global.infrastructure`
+
+### Fixed
+
+- Bump `actions/checkout` from 4 to 5.
+- Bump `Arda-cards/helm-deploy-action` from 4 to 5
+
 ## [2.0.0] - 2025-07-23
 
 ### Changed

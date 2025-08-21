@@ -15,7 +15,7 @@ jobs:
       contents: read
       statuses: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - run: cat .github/super-linter.env >> "$GITHUB_ENV"
@@ -28,7 +28,7 @@ jobs:
     outputs:
       yes: ${{ steps.gh-query.outputs.validate_in_list }}
     steps:
-      - name: Check branch protection status
+      - name: "Check branch protection status"
         id: gh-query
         env:
           GH_TOKEN: ${{ github.token }}
@@ -48,8 +48,8 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - name: Extract tag from the changelog
+      - uses: actions/checkout@v5
+      - name: "Extract tag from the changelog"
         uses: denisa/clq-action@v1
         id: clq-extract
         with:
@@ -67,7 +67,7 @@ jobs:
       contents: write
       deployments: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: denisa/clq-action@v1
         id: clq-extract
         with:
