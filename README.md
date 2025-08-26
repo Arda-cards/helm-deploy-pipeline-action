@@ -13,6 +13,7 @@ This action expects the project to have been checked out already in the `github.
 |------------------------------------------------|----------|------------------------------------------------------------------|
 | `src/main/cloudformation/pre-install.cfn.yml`  | no       | If present, applied before the helm deployment                   |
 | `src/main/cloudformation/post-install.cfn.yml` | no       | If present, applied after the helm deployment                    |
+| `src/main/helm/read-cloudFormation-values.cmd` | no       | If present, applied before the helm deployment                   |
 | `src/main/helm/`                               | yes      | `values.yaml` and `values-`*purpose*`.yaml` configure the chart. |
 
 The action will add tags for `Infrastructure` (see below) to every CloudFormation element created.
@@ -107,16 +108,15 @@ pre_install_parameters
 
 The action sets the following variables.
 
-| name              | description                 |
-|-------------------|-----------------------------|
-| global.awsRegion  | aws_region                  |
-| global.clusterIam | arn:aws:iam::${cluster_iam} |
-| global.purpose    | purpose                     |
+| name             | description |
+|------------------|-------------|
+| global.awsRegion | aws_region  |
+| global.purpose   | purpose     |
 
 ### Helm value commands
 
-If defined, the `helm_value_command` file is executed and the resulting `helm_value` passed to Helm *after* the purpose specific `value.yaml`
-from the project. The `helm_value_command` file is simple list of tuples *action, key, value*.
+If defined, the `helm_value_command` file is executed and the resulting `helm_value` passed to Helm *after* the
+purpose-specific `value.yaml` from the project. The `helm_value_command` file is simple list of tuples *action, key, value*.
 
 | action         | description                                                                                 |
 |----------------|---------------------------------------------------------------------------------------------|
@@ -124,12 +124,32 @@ from the project. The `helm_value_command` file is simple list of tuples *action
 | readExport     | sets the *key* to the CloudFormation export named *value*                                   |
 | readSecretName | sets the *key* to the name of the secret defined by the CloudFormation export named *value* |
 
-The command strips any prefix that matches `.*|::|` from the value read from CloudFormation.
+The action strips any prefix that matches `.*|::|` from the value read from CloudFormation.
+
+As it reads the command line-by-line, it substitutes these variables
+
+| name           | description                          |
+|----------------|--------------------------------------|
+| COMPONENT      | The value of `inputs.component_name` |
+| INFRASTRUCTURE | The Infrastructure name              |
+| NAMESPACE      | The value of `inputs.namespace`      |
+| PURPOSE        | The value of `inputs.purpose`        |
 
 #### Example
 
-Assuming a Helm chart that needs `.Values.global.databaseURI` to contain the value available as the CloudFormation export `AuroraClusterUri`,
-this shell script, inlined in the GitHub job, describes the CloudFormation exports to read and the  Helm variable `databaseURI` to set.
+Assuming a Helm chart that needs `.Values.global.databaseURI` to contain the value available as the CloudFormation
+export `API-AuroraClusterUri`, with the purpose as a prefix,`src/main/helm/read-cloudFormation-values.cmd` describes
+the CloudFormation exports to read and the Helm variable
+`global.databaseURI` to set.
+
+Note that Helm variable name is a path in the YAML file and, therefore, needs to start with a `.`;
+refer to [yq](https://mikefarah.gitbook.io/yq) for more details.
+
+```text
+readExport .global.databaseURI "${PURPOSE}-API-AuroraClusterUri"
+```
+
+Alternatively, this shell script, inlined in the GitHub job, achieve the same goal.
 
 ```shell
 [ "${RUNNER_DEBUG}" == 1 ] && set -xv
@@ -139,7 +159,7 @@ file_name=read-cloudFormation-values.yaml
 echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
 
 {
-echo appendExport ".global.databaseURI" "AuroraClusterUri"
+echo readExport ".global.databaseURI" "${{ matrix.purpose }}-API-AuroraClusterUri"
 } >${file_name}
 ```
 

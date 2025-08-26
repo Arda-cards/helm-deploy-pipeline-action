@@ -18,6 +18,16 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [3.1.0] - 2025-08-25
+
+### Added
+
+- Support for parametrized `read-cloudFormation-values.cmd`
+
+### Fixed
+
+- `global.clusterIam` has been removed in 3.0.0
+
 ## [3.0.0] - 2025-08-20
 
 ### Removed
