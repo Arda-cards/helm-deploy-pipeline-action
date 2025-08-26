@@ -41,7 +41,7 @@ inputs:
   helm_value_command:
     description: "Name of a file providing a set of (action key value) for additional values to helm"
     required: false
-    default: ""
+    default: "src/main/helm/read-cloudFormation-values.cmd"
   locator_url:
     description: "The URL of properties file that defines aws_region, aws_role,cluster_name."
     required: false
@@ -174,13 +174,19 @@ runs:
           yq -i "${1} =\"${secret_long_name%-*}\"" "${3}"
         }
 
-        file_name=cloudFormation-values.yaml
+        file_name="${RUNNER_TEMP}/cloudFormation-values.yaml"
         echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
         echo "---" >|${file_name}
         yq -i ".global.infrastructure = \"${{ steps.account_information.outputs.name }}\"" ${file_name}
 
         if [[ -f ${{ inputs.helm_value_command }} && -r ${{ inputs.helm_value_command }} ]]; then
           # read file line by line and write command to set *Key* to *Action* *Value*.   Field separator is ":"
+
+          COMPONENT="${{ inputs.component_name }}" \
+          INFRASTRUCTURE="${{ steps.account_information.outputs.name }}" \
+          NAMESPACE="${{ inputs.namespace }}" \
+          PURPOSE="${{ inputs.purpose }}" \
+          envsubst '${COMPONENT} ${INFRASTRUCTURE} ${NAMESPACE} ${PURPOSE}' <"${{ inputs.helm_value_command }}" |
           while read -r a k v; do
             case $a in
               copyValue)
@@ -197,7 +203,7 @@ runs:
                 exit 1
               ;;
             esac
-          done <"${{ inputs.helm_value_command }}"
+          done
 
           echo "${file_name}:"
           cat "${file_name}"
