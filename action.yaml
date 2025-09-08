@@ -89,7 +89,7 @@ runs:
         cluster_name: "${{ inputs.cluster_name }}"
         locator_url: "${{ inputs.locator_url }}"
         locator_url_token: "${{ inputs.locator_url_token }}"
-    - uses: aws-actions/configure-aws-credentials@v4
+    - uses: aws-actions/configure-aws-credentials@v5
       with:
         role-to-assume: "${{ steps.purpose_config.outputs.aws_role }}"
         aws-region: "${{ steps.purpose_config.outputs.aws_region }}"
