@@ -18,6 +18,13 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [3.1.1] - 2025-10-08
+
+### Fixed
+
+- `dry_run` and `timeout` arte now passed to `helm-deploy-action`.
+- Do not install the CloudFormation pre- and post- deployment when `dry_run` is set.
+
 ## [3.1.0] - 2025-08-25
 
 ### Added
