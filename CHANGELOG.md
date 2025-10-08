@@ -22,7 +22,7 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 
 ### Fixed
 
-- `dry_run` and `timeout` arte now passed to `helm-deploy-action`.
+- `dry_run` and `timeout` are now passed to `helm-deploy-action`.
 - Do not install the CloudFormation pre- and post- deployment when `dry_run` is set.
 - Bump `aws-actions/configure-aws-credentials` from 4 to 5
 - Automatically annotate new pull-requests with the *assignee*, the *project*, the *iteration* and the *status*.
