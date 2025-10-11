@@ -27,6 +27,8 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 - Bump `aws-actions/configure-aws-credentials` from 4 to 5
 - Automatically annotate new pull-requests with the *assignee*, the *project*, the *iteration* and the *status*.
   It is an asynchronous event-based process that might take a minute or two to complete.
+- Makefile provides for local execution of super-linter.
+- Super-linter configured to skip biome.
 
 ## [3.1.0] - 2025-08-25
 
