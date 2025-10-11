@@ -18,6 +18,18 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [3.1.1] - 2025-10-08
+
+### Fixed
+
+- `dry_run` and `timeout` are now passed to `helm-deploy-action`.
+- Do not install the CloudFormation pre- and post- deployment when `dry_run` is set.
+- Bump `aws-actions/configure-aws-credentials` from 4 to 5
+- Automatically annotate new pull-requests with the *assignee*, the *project*, the *iteration* and the *status*.
+  It is an asynchronous event-based process that might take a minute or two to complete.
+- Makefile provides for local execution of super-linter.
+- Super-linter configured to skip biome.
+
 ## [3.1.0] - 2025-08-25
 
 ### Added
