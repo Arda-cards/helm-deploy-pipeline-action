@@ -18,6 +18,14 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [3.1.2] - 2025-10-08
+
+### Fixed
+
+- Deployment must apply all cloudformation templates before reading cloudformation exports for use by helm.
+- `make lint` calls `clq` and `super-linter` to get better error reporting.
+- Bump `actions/checkout` from 5 to 6
+
 ## [3.1.1] - 2025-10-08
 
 ### Fixed

@@ -152,6 +152,16 @@ runs:
 
         standard_parameters "${{ inputs.pre_install_parameter }}" pre_install_parameter
         standard_parameters "${{ inputs.post_install_parameter }}" post_install_parameter
+    - name: "Pre-install cloudformation"
+      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      if: ${{ inputs.dry_run == 'false' && hashFiles('src/main/cloudformation/pre-install.cfn.yml') != '' }}
+      with:
+        capabilities: "CAPABILITY_NAMED_IAM"
+        name: "${{ steps.account_information.outputs.name }}-${{ inputs.namespace }}-pre"
+        no-fail-on-empty-changeset: "1"
+        parameter-overrides: "${{ steps.cloudformation_parameter.outputs.pre_install_parameter }}"
+        tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
+        template: "src/main/cloudformation/pre-install.cfn.yml"
     - name: "Parametrize Helm values from CloudFormationExports"
       id: helm_value
       if: ${{ inputs.helm_value_command }}
@@ -208,16 +218,6 @@ runs:
           echo "${file_name}:"
           cat "${file_name}"
         fi
-    - name: "Pre-install cloudformation"
-      uses: aws-actions/aws-cloudformation-github-deploy@v1
-      if: ${{ inputs.dry_run == 'false' && hashFiles('src/main/cloudformation/pre-install.cfn.yml') != '' }}
-      with:
-        capabilities: "CAPABILITY_NAMED_IAM"
-        name: "${{ steps.account_information.outputs.name }}-${{ inputs.namespace }}-pre"
-        no-fail-on-empty-changeset: "1"
-        parameter-overrides: "${{ steps.cloudformation_parameter.outputs.pre_install_parameter }}"
-        tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
-        template: "src/main/cloudformation/pre-install.cfn.yml"
     - uses: Arda-cards/helm-deploy-action@v5
       with:
         aws_region: "${{ steps.purpose_config.outputs.aws_region }}"
