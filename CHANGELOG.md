@@ -18,6 +18,12 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [3.1.3] - 2026-03-09
+
+### Fixed
+
+- Bump `aws-actions/configure-aws-credentials` from 5 to 6
+
 ## [3.1.2] - 2025-11-25
 
 ### Fixed
