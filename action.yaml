@@ -153,7 +153,7 @@ runs:
         standard_parameters "${{ inputs.pre_install_parameter }}" pre_install_parameter
         standard_parameters "${{ inputs.post_install_parameter }}" post_install_parameter
     - name: "Pre-install cloudformation"
-      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      uses: aws-actions/aws-cloudformation-github-deploy@v2
       if: ${{ inputs.dry_run == 'false' && hashFiles('src/main/cloudformation/pre-install.cfn.yml') != '' }}
       with:
         capabilities: "CAPABILITY_NAMED_IAM"
@@ -235,7 +235,7 @@ runs:
         value_file: "${{ steps.helm_value.outputs.file_name }}"
         verbose: "${{ inputs.verbose }}"
     - name: "Post-install cloudformation"
-      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      uses: aws-actions/aws-cloudformation-github-deploy@v2
       if: ${{ inputs.dry_run == 'false' && hashFiles('src/main/cloudformation/post-install.cfn.yml') != '' }}
       with:
         name: "${{ steps.account_information.outputs.name }}-${{ inputs.namespace }}-post"
