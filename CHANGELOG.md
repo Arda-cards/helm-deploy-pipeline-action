@@ -26,6 +26,7 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 - Inline the `Arda-cards/helm-deploy-action@v5` to reduce the maintenance burden.
 - Support for override of the `aws_role`, `aws_region` and `cluster_name` parameters. This action relies entirely
   on the configuration provided by the `locator_url`.
+- The action no longer supports optional `namespace`. The parameter must be provided.
 
 ### Added
 

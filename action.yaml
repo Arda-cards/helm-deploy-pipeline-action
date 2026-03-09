@@ -43,9 +43,8 @@ inputs:
     required: false
     default: ""
   namespace:
-    description: "The name of the namespace to deploy to. Optional - at least for now"
-    required: false
-    default: ""
+    description: "The name of the namespace to deploy to."
+    required: true
   post_install_parameter:
     description: "Name of a json file providing additional parameters for the post-install CloudFormation stacks"
     required: false
@@ -68,6 +67,15 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: "Mask secrets in logs"
+      shell: bash
+      run: |
+        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        set -u
+
+        echo "::add-mask::${{ inputs.github_token }}"
+        echo "::add-mask::${{ inputs.locator_url_bearer }}"
+        echo "::add-mask::${{ inputs.locator_url_token }}"
     - name: "Extract purpose configuration"
       id: purpose_config
       uses: Arda-cards/purpose-configuration-action@v1
@@ -161,6 +169,8 @@ runs:
         echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
         echo "---" >|${file_name}
         yq -i ".global.infrastructure = \"${{ steps.account_information.outputs.name }}\"" ${file_name}
+        yq -i ".global.infrastructure = \"${{ steps.account_information.outputs.name }}\"" ${file_name}
+        yq -i ".global.infrastructure = \"${{ steps.account_information.outputs.name }}\"" ${file_name}
 
         if [[ -f ${{ inputs.helm_value_command }} && -r ${{ inputs.helm_value_command }} ]]; then
           # read file line by line and write command to set *Key* to *Action* *Value*.   Field separator is ":"
@@ -182,7 +192,7 @@ runs:
                 readSecretName $k $v ${file_name}
               ;;
               *)
-                echo "::error function $f unknown (readExport, readSecretName)"
+                echo "::error::function $a unknown (readExport, readSecretName)"
                 exit 1
               ;;
             esac
@@ -202,13 +212,11 @@ runs:
         fi
         set -u
         
-        readonly namespace="${{ inputs.namespace && inputs.namespace || format('{0}-{1}', inputs.purpose, inputs.component_name ) }}"
-        
         [ "${verbose:-false}" = "true" ] && aws sts get-caller-identity
         
         aws eks --region "${{ steps.purpose_config.outputs.aws_region }}" update-kubeconfig --name "${{ steps.purpose_config.outputs.cluster_name }}"
         
-        echo "${{ inputs.github_token }}" | helm registry login ghcr.io -u $ --password-stdin
+        echo "${{ inputs.github_token }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
         
         echo "🚀🚀🚀 Upgrading ${{ inputs.purpose }} in ${{ steps.purpose_config.outputs.cluster_name }} 🚀🚀🚀"
         echo "${{ inputs.chart_name }}:${{ inputs.chart_version }}"
@@ -232,7 +240,7 @@ runs:
         helm upgrade --install --render-subchart-notes \
           "${options[@]}" \
           --version "${{ inputs.chart_version }}" \
-          --create-namespace --namespace "${namespace}" \
+          --create-namespace --namespace "${{ inputs.namespace }}" \
           --timeout "${{ inputs.timeout }}" \
           "${values[@]}" \
           --set "global.awsRegion=${{ steps.purpose_config.outputs.aws_region }}" \
