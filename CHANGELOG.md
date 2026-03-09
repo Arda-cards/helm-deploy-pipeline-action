@@ -23,6 +23,7 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 ### Fixed
 
 - Bump `aws-actions/configure-aws-credentials` from 5 to 6
+- Bump `aws-actions/aws-cloudformation-github-deploy` from 1 to 2
 
 ## [3.1.2] - 2025-11-25
 
