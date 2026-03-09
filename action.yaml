@@ -14,7 +14,7 @@ inputs:
     default: "true"
   component_name:
     description: "The name of the component being deployed, it is the helm release name;
-                  it also serves as the default base name for the kubernetes namespace. "
+                  it also serves as the default base name for the kubernetes namespace."
     required: true
   dry_run:
     description: "Set to true to perform a helm dry-run deployment"
@@ -31,7 +31,7 @@ inputs:
     required: false
     default: "src/main/helm/read-cloudFormation-values.cmd"
   locator_url:
-    description: "The URL of properties file that defines aws_region, aws_role,cluster_name."
+    description: "The URL of properties file that defines aws_region, aws_role, cluster_name."
     required: false
     default: ""
   locator_url_bearer:
@@ -128,9 +128,10 @@ runs:
         standard_parameters "${{ inputs.post_install_parameter }}" post_install_parameter
     - name: "Pre-install cloudformation"
       uses: aws-actions/aws-cloudformation-github-deploy@v2
-      if: ${{ inputs.dry_run == 'false' && hashFiles('src/main/cloudformation/pre-install.cfn.yml') != '' }}
+      if: ${{ hashFiles('src/main/cloudformation/pre-install.cfn.yml') != '' }}
       with:
         capabilities: "CAPABILITY_NAMED_IAM"
+        mode: ${{ inputs.dry_run == 'false' && 'create-and-execute' || 'create-only' }}
         name: "${{ steps.account_information.outputs.name }}-${{ inputs.namespace }}-pre"
         parameter-overrides: "${{ steps.cloudformation_parameter.outputs.pre_install_parameter }}"
         tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
@@ -239,8 +240,9 @@ runs:
           "${{ inputs.component_name }}" "${{ inputs.helm_registry }}/${{ inputs.chart_name }}"
     - name: "Post-install cloudformation"
       uses: aws-actions/aws-cloudformation-github-deploy@v2
-      if: ${{ inputs.dry_run == 'false' && hashFiles('src/main/cloudformation/post-install.cfn.yml') != '' }}
+      if: ${{ hashFiles('src/main/cloudformation/post-install.cfn.yml') != '' }}
       with:
+        mode: ${{ inputs.dry_run == 'false' && 'create-and-execute' || 'create-only' }}
         name: "${{ steps.account_information.outputs.name }}-${{ inputs.namespace }}-post"
         parameter-overrides: "${{ steps.cloudformation_parameter.outputs.post_install_parameter }}"
         tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"

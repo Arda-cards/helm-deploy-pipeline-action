@@ -27,6 +27,10 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 - Support for override of the `aws_role`, `aws_region` and `cluster_name` parameters. This action relies entirely
   on the configuration provided by the `locator_url`.
 
+### Added
+
+- When executing a dry_run, the action creates the cloudFormation templates but does not execute them.
+
 ### Fixed
 
 - Bump `aws-actions/configure-aws-credentials` from 5 to 6
