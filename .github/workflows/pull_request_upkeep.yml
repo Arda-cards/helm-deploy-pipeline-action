@@ -1,8 +1,9 @@
+---
 name: "Pull Request Upkeep"
 
 on:
   pull_request:
-    types: [ opened ]
+    types: [opened]
 
 permissions: { }
 
