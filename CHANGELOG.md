@@ -23,11 +23,14 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 ### Removed
 
 - Home-grown gating mechanism removed, use the GitHub Enterprise model instead [Deployments and environments](https://docs.github.com/en/enterprise-cloud@latest/actions/reference/workflows-and-actions/deployments-and-environments)
+- Inline the `Arda-cards/helm-deploy-action@v5` to reduce the maintenance burden.
 
 ### Fixed
 
 - Bump `aws-actions/configure-aws-credentials` from 5 to 6
 - Bump `aws-actions/aws-cloudformation-github-deploy` from 1 to 2
+- Always provides the infrastructure name as a helm value.
+- Remove reference to old `no-fail-on-empty-changeset` from the CloudFormation deployment template. It has been replaced by a new parameter `fail-on-empty-changeset` which defaults to `false`
 
 ## [3.1.2] - 2025-11-25
 
