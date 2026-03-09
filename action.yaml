@@ -2,14 +2,6 @@
 name: gradle-build-pipeline
 description: "Checkout, build and tag gradle projects"
 inputs:
-  aws_region:
-    description: "The AWS region to deploy to"
-    required: false
-    default: ""
-  aws_role:
-    description: "The AWS role for the connection"
-    required: false
-    default: ""
   chart_name:
     description: "The name of the chart to deploy "
     required: true
@@ -20,10 +12,6 @@ inputs:
     description: "Tell Helm to clean up failed deployment. Disable only while debugging deployment issue."
     required: false
     default: "true"
-  cluster_name:
-    description: "The name of the cluster"
-    required: false
-    default: ""
   component_name:
     description: "The name of the component being deployed, it is the helm release name;
                   it also serves as the default base name for the kubernetes namespace. "
@@ -84,9 +72,6 @@ runs:
       id: purpose_config
       uses: Arda-cards/purpose-configuration-action@v1
       with:
-        aws_region: "${{ inputs.aws_region }}"
-        aws_role: "${{ inputs.aws_role }}"
-        cluster_name: "${{ inputs.cluster_name }}"
         locator_url: "${{ inputs.locator_url }}"
         locator_url_token: "${{ inputs.locator_url_token }}"
     - uses: aws-actions/configure-aws-credentials@v6
