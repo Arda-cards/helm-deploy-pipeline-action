@@ -94,17 +94,6 @@ runs:
         role-to-assume: "${{ steps.purpose_config.outputs.aws_role }}"
         aws-region: "${{ steps.purpose_config.outputs.aws_region }}"
         role-duration-seconds: 900
-    - name: "Deployment gate"
-      if: ${{ steps.purpose_config.outputs.deployment_gate != 'none' }}
-      uses: Arda-cards/deployment-gate-action@v1
-      with:
-        aws_region: "${{ steps.purpose_config.outputs.aws_region }}"
-        chart_name: "${{ inputs.chart_name }}"
-        chart_version: "${{ inputs.chart_version }}"
-        cluster_name: "${{ steps.purpose_config.outputs.cluster_name }}"
-        deployment_gate: "${{ steps.purpose_config.outputs.deployment_gate }}"
-        mode: "request"
-        purpose: "${{ inputs.purpose }}"
     - name: "Extract account information"
       id: account_information
       shell: bash

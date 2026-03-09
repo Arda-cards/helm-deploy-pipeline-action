@@ -18,7 +18,11 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
-## [3.1.3] - 2026-03-09
+## [4.0.0] - 2026-03-09
+
+### Removed
+
+- Home-grown gating mechanism removed, use the GitHub Enterprise model instead [Deployments and environments](https://docs.github.com/en/enterprise-cloud@latest/actions/reference/workflows-and-actions/deployments-and-environments)
 
 ### Fixed
 
