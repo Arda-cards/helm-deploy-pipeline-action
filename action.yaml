@@ -196,7 +196,7 @@ runs:
                 readSecretName $k $v ${file_name}
               ;;
               *)
-                echo "::error::function $a unknown (readExport, readSecretName)"
+                echo "::error function $f unknown (readExport, readSecretName)"
                 exit 1
               ;;
             esac

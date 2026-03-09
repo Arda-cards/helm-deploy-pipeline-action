@@ -32,6 +32,7 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 - Always provides the infrastructure name as a helm value.
 - Remove reference to old `no-fail-on-empty-changeset` from the CloudFormation deployment template. It has been replaced by a new parameter `fail-on-empty-changeset` which defaults to `false`
 - `pull_request_upkeep.yml` uses GitHub variable to identify the project.
+- Configure `super-linter` with the list of languages to be linted.
 
 ## [3.1.2] - 2025-11-25
 
