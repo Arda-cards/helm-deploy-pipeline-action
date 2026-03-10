@@ -2,14 +2,6 @@
 name: gradle-build-pipeline
 description: "Checkout, build and tag gradle projects"
 inputs:
-  aws_region:
-    description: "The AWS region to deploy to"
-    required: false
-    default: ""
-  aws_role:
-    description: "The AWS role for the connection"
-    required: false
-    default: ""
   chart_name:
     description: "The name of the chart to deploy "
     required: true
@@ -20,13 +12,9 @@ inputs:
     description: "Tell Helm to clean up failed deployment. Disable only while debugging deployment issue."
     required: false
     default: "true"
-  cluster_name:
-    description: "The name of the cluster"
-    required: false
-    default: ""
   component_name:
     description: "The name of the component being deployed, it is the helm release name;
-                  it also serves as the default base name for the kubernetes namespace. "
+                  it also serves as the default base name for the kubernetes namespace."
     required: true
   dry_run:
     description: "Set to true to perform a helm dry-run deployment"
@@ -43,7 +31,7 @@ inputs:
     required: false
     default: "src/main/helm/read-cloudFormation-values.cmd"
   locator_url:
-    description: "The URL of properties file that defines aws_region, aws_role,cluster_name."
+    description: "The URL of properties file that defines aws_region, aws_role, cluster_name."
     required: false
     default: ""
   locator_url_bearer:
@@ -55,9 +43,8 @@ inputs:
     required: false
     default: ""
   namespace:
-    description: "The name of the namespace to deploy to. Optional - at least for now"
-    required: false
-    default: ""
+    description: "The name of the namespace to deploy to."
+    required: true
   post_install_parameter:
     description: "Name of a json file providing additional parameters for the post-install CloudFormation stacks"
     required: false
@@ -80,31 +67,26 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: "Mask secrets in logs"
+      shell: bash
+      run: |
+        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        set -u
+
+        echo "::add-mask::${{ inputs.github_token }}"
+        echo "::add-mask::${{ inputs.locator_url_bearer }}"
+        echo "::add-mask::${{ inputs.locator_url_token }}"
     - name: "Extract purpose configuration"
       id: purpose_config
       uses: Arda-cards/purpose-configuration-action@v1
       with:
-        aws_region: "${{ inputs.aws_region }}"
-        aws_role: "${{ inputs.aws_role }}"
-        cluster_name: "${{ inputs.cluster_name }}"
         locator_url: "${{ inputs.locator_url }}"
         locator_url_token: "${{ inputs.locator_url_token }}"
-    - uses: aws-actions/configure-aws-credentials@v5
+    - uses: aws-actions/configure-aws-credentials@v6
       with:
         role-to-assume: "${{ steps.purpose_config.outputs.aws_role }}"
         aws-region: "${{ steps.purpose_config.outputs.aws_region }}"
         role-duration-seconds: 900
-    - name: "Deployment gate"
-      if: ${{ steps.purpose_config.outputs.deployment_gate != 'none' }}
-      uses: Arda-cards/deployment-gate-action@v1
-      with:
-        aws_region: "${{ steps.purpose_config.outputs.aws_region }}"
-        chart_name: "${{ inputs.chart_name }}"
-        chart_version: "${{ inputs.chart_version }}"
-        cluster_name: "${{ steps.purpose_config.outputs.cluster_name }}"
-        deployment_gate: "${{ steps.purpose_config.outputs.deployment_gate }}"
-        mode: "request"
-        purpose: "${{ inputs.purpose }}"
     - name: "Extract account information"
       id: account_information
       shell: bash
@@ -153,18 +135,17 @@ runs:
         standard_parameters "${{ inputs.pre_install_parameter }}" pre_install_parameter
         standard_parameters "${{ inputs.post_install_parameter }}" post_install_parameter
     - name: "Pre-install cloudformation"
-      uses: aws-actions/aws-cloudformation-github-deploy@v1
-      if: ${{ inputs.dry_run == 'false' && hashFiles('src/main/cloudformation/pre-install.cfn.yml') != '' }}
+      uses: aws-actions/aws-cloudformation-github-deploy@v2
+      if: ${{ hashFiles('src/main/cloudformation/pre-install.cfn.yml') != '' }}
       with:
         capabilities: "CAPABILITY_NAMED_IAM"
+        mode: ${{ inputs.dry_run == 'false' && 'create-and-execute' || 'create-only' }}
         name: "${{ steps.account_information.outputs.name }}-${{ inputs.namespace }}-pre"
-        no-fail-on-empty-changeset: "1"
         parameter-overrides: "${{ steps.cloudformation_parameter.outputs.pre_install_parameter }}"
         tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
         template: "src/main/cloudformation/pre-install.cfn.yml"
     - name: "Parametrize Helm values from CloudFormationExports"
       id: helm_value
-      if: ${{ inputs.helm_value_command }}
       shell: bash
       run: |
         [ "${RUNNER_DEBUG}" == 1 ] && set -xv
@@ -188,6 +169,8 @@ runs:
         echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
         echo "---" >|${file_name}
         yq -i ".global.infrastructure = \"${{ steps.account_information.outputs.name }}\"" ${file_name}
+        yq -i ".global.infrastructure = \"${{ steps.account_information.outputs.name }}\"" ${file_name}
+        yq -i ".global.infrastructure = \"${{ steps.account_information.outputs.name }}\"" ${file_name}
 
         if [[ -f ${{ inputs.helm_value_command }} && -r ${{ inputs.helm_value_command }} ]]; then
           # read file line by line and write command to set *Key* to *Action* *Value*.   Field separator is ":"
@@ -209,7 +192,7 @@ runs:
                 readSecretName $k $v ${file_name}
               ;;
               *)
-                echo "::error function $f unkonwn (readExport, readSecretName)"
+                echo "::error::function $a unknown (readExport, readSecretName)"
                 exit 1
               ;;
             esac
@@ -218,28 +201,57 @@ runs:
           echo "${file_name}:"
           cat "${file_name}"
         fi
-    - uses: Arda-cards/helm-deploy-action@v5
-      with:
-        aws_region: "${{ steps.purpose_config.outputs.aws_region }}"
-        chart_name: "${{ inputs.chart_name }}"
-        chart_version: "${{ inputs.chart_version }}"
-        clean_up: ${{ inputs.clean_up }}
-        cluster_name: "${{ steps.purpose_config.outputs.cluster_name }}"
-        component_name: "${{ inputs.component_name }}"
-        dry_run: "${{ inputs.dry_run }}"
-        github_token: "${{ inputs.github_token }}"
-        helm_registry: "${{ inputs.helm_registry }}"
-        namespace: "${{ inputs.namespace }}"
-        purpose: "${{ inputs.purpose }}"
-        timeout: "${{ inputs.timeout }}"
-        value_file: "${{ steps.helm_value.outputs.file_name }}"
-        verbose: "${{ inputs.verbose }}"
+    - name: "Deploying ${{ inputs.chart_name }}:${{ inputs.chart_version }} for ${{ inputs.purpose }}"
+      shell: bash
+      run: |
+        if [ "${RUNNER_DEBUG}" == 1 ]; then
+          set -xv
+          readonly verbose=true
+        elif [ "${{ inputs.verbose }}" = "true" ]; then
+          readonly verbose=true
+        fi
+        set -u
+        
+        [ "${verbose:-false}" = "true" ] && aws sts get-caller-identity
+        
+        aws eks --region "${{ steps.purpose_config.outputs.aws_region }}" update-kubeconfig --name "${{ steps.purpose_config.outputs.cluster_name }}"
+        
+        echo "${{ inputs.github_token }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+        
+        echo "🚀🚀🚀 Upgrading ${{ inputs.purpose }} in ${{ steps.purpose_config.outputs.cluster_name }} 🚀🚀🚀"
+        echo "${{ inputs.chart_name }}:${{ inputs.chart_version }}"
+        echo "🚀🚀🚀 ==================== 🚀🚀🚀"
+        
+        options=()
+        if [ "${{ inputs.clean_up }}" = "true" ]; then
+          options+=("--atomic" "--cleanup-on-fail")
+        else
+          options+=("--wait")
+        fi
+        if [ "${{ inputs.dry_run }}" = "true" ]; then
+          echo "🟧🟧🟧 dry run 🟧🟧🟧"
+          options+=("--dry-run")
+        fi
+        [ "${{ inputs.verbose }}" = "true" ] && options+=("--debug")
+        
+        values=("--values" "src/main/helm/values-${{ inputs.purpose }}.yaml")
+        [ -n "${{ steps.helm_value.outputs.file_name }}" ] && [ -r "${{ steps.helm_value.outputs.file_name }}" ] && values+=("--values" "${{ steps.helm_value.outputs.file_name }}")
+        
+        helm upgrade --install --render-subchart-notes \
+          "${options[@]}" \
+          --version "${{ inputs.chart_version }}" \
+          --create-namespace --namespace "${{ inputs.namespace }}" \
+          --timeout "${{ inputs.timeout }}" \
+          "${values[@]}" \
+          --set "global.awsRegion=${{ steps.purpose_config.outputs.aws_region }}" \
+          --set "global.purpose=${{ inputs.purpose }}" \
+          "${{ inputs.component_name }}" "${{ inputs.helm_registry }}/${{ inputs.chart_name }}"
     - name: "Post-install cloudformation"
-      uses: aws-actions/aws-cloudformation-github-deploy@v1
-      if: ${{ inputs.dry_run == 'false' && hashFiles('src/main/cloudformation/post-install.cfn.yml') != '' }}
+      uses: aws-actions/aws-cloudformation-github-deploy@v2
+      if: ${{ hashFiles('src/main/cloudformation/post-install.cfn.yml') != '' }}
       with:
+        mode: ${{ inputs.dry_run == 'false' && 'create-and-execute' || 'create-only' }}
         name: "${{ steps.account_information.outputs.name }}-${{ inputs.namespace }}-post"
-        no-fail-on-empty-changeset: "1"
         parameter-overrides: "${{ steps.cloudformation_parameter.outputs.post_install_parameter }}"
         tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
         template: "src/main/cloudformation/post-install.cfn.yml"

@@ -18,6 +18,30 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [4.0.0] - 2026-03-09
+
+### Removed
+
+- Home-grown gating mechanism removed, use the GitHub Enterprise model instead [Deployments and environments](https://docs.github.com/en/enterprise-cloud@latest/actions/reference/workflows-and-actions/deployments-and-environments)
+- Inline the `Arda-cards/helm-deploy-action@v5` to reduce the maintenance burden.
+- Support for override of the `aws_role`, `aws_region` and `cluster_name` parameters. This action relies entirely
+  on the configuration provided by the `locator_url`.
+- The action no longer supports optional `namespace`. The parameter must be provided.
+
+### Added
+
+- When executing a dry_run, the action creates the cloudFormation templates but does not execute them.
+
+### Fixed
+
+- Bump `aws-actions/configure-aws-credentials` from 5 to 6
+- Bump `aws-actions/aws-cloudformation-github-deploy` from 1 to 2
+- Always provides the infrastructure name as a helm value.
+- Remove reference to old `no-fail-on-empty-changeset` from the CloudFormation deployment template. It has been
+  replaced by a new parameter `fail-on-empty-changeset` which defaults to `false`.
+- `pull_request_upkeep.yml` uses GitHub variable to identify the project.
+- Configure `super-linter` with the list of languages to be linted.
+
 ## [3.1.2] - 2025-11-25
 
 ### Fixed
