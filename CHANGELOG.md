@@ -18,6 +18,12 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [4.0.1] - 2026-05-11
+
+### Fixed
+
+- Resolve `Warning: Can't add secret mask for empty string in ##[add-mask] command`
+
 ## [4.0.0] - 2026-03-09
 
 ### Removed
