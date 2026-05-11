@@ -74,8 +74,8 @@ runs:
         set -u
 
         echo "::add-mask::${{ inputs.github_token }}"
-        echo "::add-mask::${{ inputs.locator_url_bearer }}"
-        echo "::add-mask::${{ inputs.locator_url_token }}"
+        [ -n "${{ inputs.locator_url_bearer }}" ] && echo "::add-mask::${{ inputs.locator_url_bearer }}"
+        [ -n "${{ inputs.locator_url_token }}" ] && echo "::add-mask::${{ inputs.locator_url_token }}"
     - name: "Extract purpose configuration"
       id: purpose_config
       uses: Arda-cards/purpose-configuration-action@v1
