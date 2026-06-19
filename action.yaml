@@ -153,14 +153,21 @@ runs:
 
         function readExport {
           local value="$(aws cloudformation list-exports --query "Exports[?Name=='${{ steps.account_information.outputs.name }}-${2}'].Value" --output text)"
-          yq -i "${1} = \"${value#*|::|}\"" "${3}"
+          if [ -z "${value}" ]; then
+            echo "::error::CloudFormation export ${{ steps.account_information.outputs.name }}-${2} not found"
+            exit 1
+          fi
+          yq -i "${1} = \"${value}\"" "${3}"
         }
 
         # ARN for secret name:
         # arn:aws:secretsmanager:${region}:${account}:secret:${secret_name}-${version}
         function readSecretName {
-          local value="$(aws cloudformation list-exports --query "Exports[?Name=='${{ steps.account_information.outputs.name }}-${2}'].Value" --output text)"
-          local secret_arn="${value#*|::|}"
+          local secret_arn="$(aws cloudformation list-exports --query "Exports[?Name=='${{ steps.account_information.outputs.name }}-${2}'].Value" --output text)"
+          if [ -z "${value}" ]; then
+            echo "::error::CloudFormation export ${{ steps.account_information.outputs.name }}-${2} not found"
+            exit 1
+          fi
           local secret_long_name=${secret_arn##*:secret:}
           yq -i "${1} =\"${secret_long_name%-*}\"" "${3}"
         }
