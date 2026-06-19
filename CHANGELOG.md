@@ -18,6 +18,13 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [4.0.2] - 2026-06-18
+
+### Fixed
+
+- Fail early if a CloudFormation export value is missing or empty.
+- Drop support for the obsolete `*|::|` delimiter in CloudFormation export values.
+
 ## [4.0.1] - 2026-05-11
 
 ### Fixed
