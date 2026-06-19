@@ -22,8 +22,8 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 
 ### Fixed
 
-- Fails early if a CloudFormation export value is empty, which can happen if the export value is not found or if the export value is empty.
-- Drop support for the obsolete `*|::|` in cloud formation exported value.
+- Fail early if a CloudFormation export value is missing or empty.
+- Drop support for the obsolete `*|::|` delimiter in CloudFormation export values.
 
 ## [4.0.1] - 2026-05-11
 
