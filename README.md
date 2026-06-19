@@ -124,8 +124,6 @@ purpose-specific `value.yaml` from the project. The `helm_value_command` file is
 | readExport     | sets the *key* to the CloudFormation export named *value*                                   |
 | readSecretName | sets the *key* to the name of the secret defined by the CloudFormation export named *value* |
 
-The action strips any prefix that matches `.*|::|` from the value read from CloudFormation.
-
 As it reads the command line-by-line, it substitutes these variables
 
 | name           | description                          |
