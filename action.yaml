@@ -69,7 +69,7 @@ inputs:
     required: false
     default: "false"
   workflow_dispatch_secret:
-    description: "A secret with workflow dispatch permission to trigger the api-test workflow"
+    description: "A secret with workflow dispatch permission to trigger the post-deployment test workflow"
     required: false
     default: ""
 runs:
