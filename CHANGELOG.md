@@ -24,6 +24,10 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 
 - Possibility to call out a workflow in another repository after a deployment.
 
+### Fixed
+
+- Bump `actions/checkout` from 6 to 7
+
 ## [4.0.2] - 2026-06-18
 
 ### Fixed
