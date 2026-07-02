@@ -18,7 +18,11 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
-## [4.0.3] - 2026-07-01
+### [4.1.0] - 2026-07-02
+
+### Added
+
+- Possibility to call out a workflow in another repository after a deployment.
 
 ### Fixed
 

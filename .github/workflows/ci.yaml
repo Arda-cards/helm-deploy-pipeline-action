@@ -33,7 +33,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+          [ "${{ runner.debug }}" == 1 ] && set -xv
           set -u
 
           if gh ruleset check --repo "${GITHUB_REPOSITORY}" "${GITHUB_BASE_REF:-$GITHUB_REF_NAME}" \

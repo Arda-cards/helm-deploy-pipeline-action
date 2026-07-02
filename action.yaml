@@ -64,13 +64,29 @@ inputs:
     description: "enable verbose output"
     required: false
     default: "false"
+  workflow_dispatch_name:
+    description: "The name of the post-deployment (test) workflow in the repository"
+    required: false
+    default: ""
+  workflow_dispatch_ref:
+    description: "The ref of the post-deployment (test) workflow in the repository"
+    required: false
+    default: ""
+  workflow_dispatch_repository:
+    description: "A repository with post-deployment behavior"
+    required: false
+    default: ""
+  workflow_dispatch_token:
+    description: "A GitHub token with workflow dispatch permission to trigger the post-deployment (test) workflow"
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
     - name: "Mask secrets in logs"
       shell: bash
       run: |
-        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        [ "${{ runner.debug }}" == 1 ] && set -xv
         set -u
 
         echo "::add-mask::${{ inputs.github_token }}"
@@ -91,7 +107,7 @@ runs:
       id: account_information
       shell: bash
       run: |
-        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        [ "${{ runner.debug }}" == 1 ] && set -xv
         set -u
 
         readonly name=$(aws --query AccountName --output text account get-account-information)
@@ -100,7 +116,7 @@ runs:
       id: cloudformation_parameter
       shell: bash
       run: |
-        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        [ "${{ runner.debug }}" == 1 ] && set -xv
         set -u
 
         maybeAppend() {
@@ -119,7 +135,7 @@ runs:
         
         standard_parameters() {
           if [ -z "${1}" ]; then
-            file_name="${RUNNER_TEMP}/${2}.json"
+            file_name="${{ runner.temp }}/${2}.json"
             echo '[]' > "${file_name}"
           else
             file_name="$(realpath "${1}")"
@@ -148,7 +164,7 @@ runs:
       id: helm_value
       shell: bash
       run: |
-        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        [ "${{ runner.debug }}" == 1 ] && set -xv
         set -u
 
         function readExport {
@@ -172,7 +188,7 @@ runs:
           yq -i "${1} =\"${secret_long_name%-*}\"" "${3}"
         }
 
-        file_name="${RUNNER_TEMP}/cloudFormation-values.yaml"
+        file_name="${{ runner.temp }}/cloudFormation-values.yaml"
         echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
         echo "---" >|${file_name}
         yq -i ".global.infrastructure = \"${{ steps.account_information.outputs.name }}\"" ${file_name}
@@ -211,7 +227,7 @@ runs:
     - name: "Deploying ${{ inputs.chart_name }}:${{ inputs.chart_version }} for ${{ inputs.purpose }}"
       shell: bash
       run: |
-        if [ "${RUNNER_DEBUG}" == 1 ]; then
+        if [ "${{ runner.debug }}" == 1 ]; then
           set -xv
           readonly verbose=true
         elif [ "${{ inputs.verbose }}" = "true" ]; then
@@ -262,3 +278,35 @@ runs:
         parameter-overrides: "${{ steps.cloudformation_parameter.outputs.post_install_parameter }}"
         tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
         template: "src/main/cloudformation/post-install.cfn.yml"
+    - name: Trigger post-deployment test
+      if: ${{ inputs.workflow_dispatch_name && inputs.workflow_dispatch_ref && inputs.workflow_dispatch_repository && inputs.workflow_dispatch_token }}
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.workflow_dispatch_token }}
+      run: |
+        [ "${{ runner.debug }}" == 1 ] && set -xv
+        set -u
+
+        run_url="$(
+          gh workflow run ${{ inputs.workflow_dispatch_name }} \
+          --repo ${{ inputs.workflow_dispatch_repository }} \
+          --ref ${{ inputs.workflow_dispatch_ref }}  \
+          -f includedTags=${{ inputs.component_name }},${{ inputs.purpose }} \
+          -f ${{ inputs.component_name }}_target_version=${{ inputs.chart_version }}
+        )"
+        
+        echo "::notice title=Triggered test workflow::$run_url"
+        
+        run_id="${run_url##*/}"
+        
+        if [[ -z "$run_id" || "$run_id" == "$run_url" ]]; then
+          echo "::error::Failed to extract run ID from workflow URL: $run_url" >&2
+          exit 1
+        fi
+        
+        echo "Ignore 'requesting annotations returned 403 Forbidden'"
+        echo "it is a limitation of fine-grained tokens when used with the gh cli."
+        gh run watch "$run_id" --repo ${{ inputs.workflow_dispatch_repository }} --exit-status
+        echo "Ignore 'requesting annotations returned 403 Forbidden'"
+        echo "it is a limitation of fine-grained tokens when used with the gh cli."
+        echo "::notice title=Test workflow::$run_url completed"
