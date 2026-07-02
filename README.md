@@ -167,18 +167,18 @@ refer to [yq](https://mikefarah.gitbook.io/yq) for more details.
 ## Post-deployment hook
 
 It is possible to define a post-deployment hook that is executed after the helm deployment and the post-install CloudFormation stack.
-The hook is defined by the github input parameter `post_deployment_name`, which is the name of a github workflow in the repository `post_deployment_repository`, at the
-Git reference `post_deployment_ref`.
-A fine-grained GitHub token is required to trigger the workflow, which is passed as the `post_deployment_token` input parameter.
+The hook is defined by the github input parameter `workflow_dispatch_name`, which is the name of a github workflow in the repository `workflow_dispatch_repository`, at the
+Git reference `workflow_dispatch_ref`.
+A fine-grained GitHub token is required to trigger the workflow, which is passed as the `workflow_dispatch_token` input parameter.
 
-The post-deployment hook is executed only when all `post_deployment_` inputs are defined.
+The post-deployment hook is executed only when all `workflow_dispatch_` inputs are defined.
 
 The Workflow is triggered with the following inputs:
 
-| Input                                       | Value                        |
-|---------------------------------------------|------------------------------|
-| includedTags                                | ${{ inputs.component_name }} |
-| ${{ inputs.component_name }}_target_version | ${{ inputs.chart_version }}  |
+| Input                                       | Value                                              |
+|---------------------------------------------|----------------------------------------------------|
+| includedTags                                | ${{ inputs.component_name }},${{ inputs.purpose }} |
+| ${{ inputs.component_name }}_target_version | ${{ inputs.chart_version }}                        |
 
 ## Arguments
 
