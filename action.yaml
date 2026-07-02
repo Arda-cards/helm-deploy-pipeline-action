@@ -68,6 +68,10 @@ inputs:
     description: "The name of the post-deployment (test) workflow in the repository"
     required: false
     default: ""
+  workflow_dispatch_purposes:
+    description: "A JSON array of purposes to trigger the post-deployment (test) workflow"
+    required: false
+    default: "[]"
   workflow_dispatch_ref:
     description: "The ref of the post-deployment (test) workflow in the repository"
     required: false
@@ -279,7 +283,7 @@ runs:
         tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
         template: "src/main/cloudformation/post-install.cfn.yml"
     - name: Trigger post-deployment test
-      if: ${{ inputs.purpose == 'dev' && inputs.workflow_dispatch_name && inputs.workflow_dispatch_ref && inputs.workflow_dispatch_repository && inputs.workflow_dispatch_token }}
+      if: ${{ contains(fromJSON(workflow_dispatch_purposes), inputs.purpose) && inputs.workflow_dispatch_name && inputs.workflow_dispatch_ref && inputs.workflow_dispatch_repository && inputs.workflow_dispatch_token }}
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.workflow_dispatch_token }}
@@ -291,7 +295,7 @@ runs:
           gh workflow run run-tests-by-tag.yaml \
           --repo ${{ inputs.workflow_dispatch_repository }} \
           --ref ${{ inputs.workflow_dispatch_ref }}  \
-          -f includedTags=${{ inputs.component_name }} \
+          -f includedTags=${{ inputs.component_name }},${{ inputs.purpose }} \
           -f ${{ inputs.component_name }}_target_version=${{ inputs.chart_version }}
         )"
         

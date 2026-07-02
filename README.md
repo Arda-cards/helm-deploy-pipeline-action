@@ -170,7 +170,7 @@ It is possible to define a post-deployment hook that is executed after the helm 
 The hook is defined by the github input parameter `post_deployment_name`, which is the name of a github workflow in the repository `post_deployment_repository`.
 A fine-grained GitHub token is required to trigger the workflow, which is passed as the `post_deployment_token` input parameter.
 
-The post-deployment hook is executed only for the `dev` purpose, and only if `post_deployment_` inputs are defined.
+The post-deployment hook is executed only if the purpose is an element of the JSON array `post_deployment_purposes`, and only if `post_deployment_` inputs are defined.
 
 The Workflow is triggered with the following inputs:
 
