@@ -283,7 +283,10 @@ runs:
         tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
         template: "src/main/cloudformation/post-install.cfn.yml"
     - name: Trigger post-deployment test
-      if: ${{ contains(fromJSON(workflow_dispatch_purposes), inputs.purpose) && inputs.workflow_dispatch_name && inputs.workflow_dispatch_ref && inputs.workflow_dispatch_repository && inputs.workflow_dispatch_token }}
+      if: ${{
+        contains(fromJSON(inputs.workflow_dispatch_purposes), inputs.purpose)
+        && inputs.workflow_dispatch_name && inputs.workflow_dispatch_ref && inputs.workflow_dispatch_repository && inputs.workflow_dispatch_token
+        }}
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.workflow_dispatch_token }}
