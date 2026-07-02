@@ -56,6 +56,10 @@ inputs:
   purpose:
     description: "The purpose in the deployment pipeline (dev, prod, ...)"
     required: true
+  test_repository:
+    description: "A repository to trigger post-deployment test workflow"
+    required: false
+    default: ""
   timeout:
     description: "time to wait for the deployment to succeed (a Go duration, default 5m0s)"
     required: false
@@ -64,13 +68,17 @@ inputs:
     description: "enable verbose output"
     required: false
     default: "false"
+  workflow_dispatch_secret:
+    description: "A secret with workflow dispatch permission to trigger the api-test workflow"
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
     - name: "Mask secrets in logs"
       shell: bash
       run: |
-        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        [ "${{ runner.debug }}" == 1 ] && set -xv
         set -u
 
         echo "::add-mask::${{ inputs.github_token }}"
@@ -91,7 +99,7 @@ runs:
       id: account_information
       shell: bash
       run: |
-        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        [ "${{ runner.debug }}" == 1 ] && set -xv
         set -u
 
         readonly name=$(aws --query AccountName --output text account get-account-information)
@@ -100,7 +108,7 @@ runs:
       id: cloudformation_parameter
       shell: bash
       run: |
-        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        [ "${{ runner.debug }}" == 1 ] && set -xv
         set -u
 
         maybeAppend() {
@@ -148,7 +156,7 @@ runs:
       id: helm_value
       shell: bash
       run: |
-        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        [ "${{ runner.debug }}" == 1 ] && set -xv
         set -u
 
         function readExport {
@@ -262,3 +270,33 @@ runs:
         parameter-overrides: "${{ steps.cloudformation_parameter.outputs.post_install_parameter }}"
         tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
         template: "src/main/cloudformation/post-install.cfn.yml"
+    - name: Trigger post-deployment test
+      if: ${{ inputs.purpose == 'dev' && inputs.workflow_dispatch_secret && inputs.test_repository }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.workflow_dispatch_secret }}
+      run: |
+        [ "${RUNNER_DEBUG}" == 1 ] && set -xv
+        set -u
+
+        run_url="$(
+          gh workflow run run-tests-by-tag.yaml \
+          --repo ${{ inputs.test_repository }} \
+          --ref v1 \
+          -f includedTags=${{ inputs.component_name }} \
+          -f account_target_version=${{ inputs.chart_version }}
+        )"
+        
+        echo "::notice title=Triggered test workflow::$run_url"
+        
+        run_id="${run_url##*/}"
+        
+        if [[ -z "$run_id" || "$run_id" == "$run_url" ]]; then
+          echo "Failed to extract run ID from workflow URL: $run_url" >&2
+          exit 1
+        fi
+        
+        echo "Ignore 'requesting annotations returned 403 Forbidden'"
+        echo "it is a limitation of fine-grained tokens when used with the gh cli."
+        gh run watch "$run_id" --repo ${{ inputs.test_repository }} --exit-status
+        echo "Ignore 'requesting annotations returned 403 Forbidden'"
+        echo "it is a limitation of fine-grained tokens when used with the gh cli."

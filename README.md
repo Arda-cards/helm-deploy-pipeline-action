@@ -89,7 +89,7 @@ Resources:
 this shell script, inlined in the GitHub job, reads a GitHub secret and saves it as the parameter `GhcrPullKey`.
 
 ```shell
-[ "${RUNNER_DEBUG}" == 1 ] && set -xv
+[ "${{ runner.debug }}" == 1 ] && set -xv
 set -u
 
 pre_install_parameters() {
@@ -150,7 +150,7 @@ readExport .global.databaseURI "${PURPOSE}-API-AuroraClusterUri"
 Alternatively, this shell script, inlined in the GitHub job, achieve the same goal.
 
 ```shell
-[ "${RUNNER_DEBUG}" == 1 ] && set -xv
+[ "${{ runner.debug }}" == 1 ] && set -xv
 set -u
 
 file_name=read-cloudFormation-values.yaml
