@@ -164,6 +164,21 @@ echo readExport ".global.databaseURI" "${{ matrix.purpose }}-API-AuroraClusterUr
 Note that Helm variable name is a path in the YAML file and, therefore, needs to start with a `.`;
 refer to [yq](https://mikefarah.gitbook.io/yq) for more details.
 
+## Post-deployment hook
+
+It is possible to define a post-deployment hook that is executed after the helm deployment and the post-install CloudFormation stack.
+The hook is defined by the github input parameter `post_deployment_name`, which is the name of a github workflow in the repository `post_deployment_repository`.
+A fine-grained GitHub token is required to trigger the workflow, which is passed as the `post_deployment_token` input parameter.
+
+The post-deployment hook is executed only for the `dev` purpose, and only if `post_deployment_` inputs are defined.
+
+The Workflow is triggered with the following inputs:
+
+| Input                                       | Value                        |
+|---------------------------------------------|------------------------------|
+| includedTags                                | ${{ inputs.component_name }} |
+| ${{ inputs.component_name }}_target_version | ${{ inputs.chart_version }}  |
+
 ## Arguments
 
 See [action.yaml](action.yaml).
