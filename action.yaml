@@ -272,6 +272,7 @@ runs:
         template: "src/main/cloudformation/post-install.cfn.yml"
     - name: Trigger post-deployment test
       if: ${{ inputs.purpose == 'dev' && inputs.workflow_dispatch_secret && inputs.test_repository }}
+      shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.workflow_dispatch_secret }}
       run: |
