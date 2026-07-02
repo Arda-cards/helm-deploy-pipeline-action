@@ -18,6 +18,12 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [4.0.3] - 2026-07-01
+
+### Fixed
+
+- Bump `actions/checkout` from 6 to 7
+
 ## [4.0.2] - 2026-06-18
 
 ### Fixed
