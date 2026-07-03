@@ -89,7 +89,7 @@ Resources:
 this shell script, inlined in the GitHub job, reads a GitHub secret and saves it as the parameter `GhcrPullKey`.
 
 ```shell
-[ "${RUNNER_DEBUG}" == 1 ] && set -xv
+[ "${{ runner.debug }}" == 1 ] && set -xv
 set -u
 
 pre_install_parameters() {
@@ -150,7 +150,7 @@ readExport .global.databaseURI "${PURPOSE}-API-AuroraClusterUri"
 Alternatively, this shell script, inlined in the GitHub job, achieve the same goal.
 
 ```shell
-[ "${RUNNER_DEBUG}" == 1 ] && set -xv
+[ "${{ runner.debug }}" == 1 ] && set -xv
 set -u
 
 file_name=read-cloudFormation-values.yaml
@@ -163,6 +163,22 @@ echo readExport ".global.databaseURI" "${{ matrix.purpose }}-API-AuroraClusterUr
 
 Note that Helm variable name is a path in the YAML file and, therefore, needs to start with a `.`;
 refer to [yq](https://mikefarah.gitbook.io/yq) for more details.
+
+## Post-deployment hook
+
+It is possible to define a post-deployment hook that is executed after the helm deployment and the post-install CloudFormation stack.
+The hook is defined by the input parameter `workflow_dispatch_name`, which is the name of a GitHub workflow in the repository `workflow_dispatch_repository`, at the
+Git reference `workflow_dispatch_ref`.
+A fine-grained GitHub token is required to trigger the workflow, which is passed as the `workflow_dispatch_token` input parameter.
+
+The post-deployment hook is executed only when all `workflow_dispatch_` inputs are defined.
+
+The Workflow is triggered with the following inputs:
+
+| Input                                       | Value                                              |
+|---------------------------------------------|----------------------------------------------------|
+| includedTags                                | ${{ inputs.component_name }},${{ inputs.purpose }} |
+| ${{ inputs.component_name }}_target_version | ${{ inputs.chart_version }}                        |
 
 ## Arguments
 
