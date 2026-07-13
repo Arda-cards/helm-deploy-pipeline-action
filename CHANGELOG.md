@@ -24,6 +24,7 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
 
 - The current Bruno version (v2) selects tests that have *at least one matching tag*.
 - Execute Bruno tests only on `dev`.
+- Bump `Arda-cards/pull-request-setup-action` from 1 to 2
 
 ## [4.1.0] - 2026-07-02
 
