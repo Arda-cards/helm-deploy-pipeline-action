@@ -279,7 +279,7 @@ runs:
         tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
         template: "src/main/cloudformation/post-install.cfn.yml"
     - name: Trigger post-deployment test
-      if: ${{ inputs.workflow_dispatch_name && inputs.workflow_dispatch_ref && inputs.workflow_dispatch_repository && inputs.workflow_dispatch_token }}
+      if: ${{ inputs.purpose == 'dev' && inputs.workflow_dispatch_name && inputs.workflow_dispatch_ref && inputs.workflow_dispatch_repository && inputs.workflow_dispatch_token }}
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.workflow_dispatch_token }}
@@ -291,7 +291,7 @@ runs:
           gh workflow run ${{ inputs.workflow_dispatch_name }} \
           --repo ${{ inputs.workflow_dispatch_repository }} \
           --ref ${{ inputs.workflow_dispatch_ref }}  \
-          -f includedTags=${{ inputs.component_name }},${{ inputs.purpose }} \
+          -f includedTags=${{ inputs.component_name }} \
           -f ${{ inputs.component_name }}_target_version=${{ inputs.chart_version }}
         )"
         
