@@ -39,7 +39,7 @@ If both parameters are present, both headers are added and behavior is defined b
 
 ## Parametrizing CloudFormation
 
-The action sets the following parameters for both the pre and the post install stacks.
+The action sets the following parameters for both the pre and the post installation stacks.
 
 | name           | description                               |
 |----------------|-------------------------------------------|
@@ -171,14 +171,14 @@ The hook is defined by the input parameter `workflow_dispatch_name`, which is th
 Git reference `workflow_dispatch_ref`.
 A fine-grained GitHub token is required to trigger the workflow, which is passed as the `workflow_dispatch_token` input parameter.
 
-The post-deployment hook is executed only when all `workflow_dispatch_` inputs are defined.
+The post-deployment hook is executed only when all `workflow_dispatch_` inputs are defined, and only for the `dev` purpose.
 
 The Workflow is triggered with the following inputs:
 
-| Input                                       | Value                                              |
-|---------------------------------------------|----------------------------------------------------|
-| includedTags                                | ${{ inputs.component_name }},${{ inputs.purpose }} |
-| ${{ inputs.component_name }}_target_version | ${{ inputs.chart_version }}                        |
+| Input                                       | Value                        |
+|---------------------------------------------|------------------------------|
+| includedTags                                | ${{ inputs.component_name }} |
+| ${{ inputs.component_name }}_target_version | ${{ inputs.chart_version }}  |
 
 ## Arguments
 
