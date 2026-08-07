@@ -16,6 +16,12 @@ inputs:
     description: "The name of the component being deployed, it is the helm release name;
                   it also serves as the default base name for the kubernetes namespace."
     required: true
+  allow_downgrade:
+    description: >-
+      Set true to deploy a chart version older than the one already released in the namespace.
+      A rollback is a deliberate act; an overtaking build is not.
+    required: false
+    default: "false"
   dry_run:
     description: "Set to true to perform a helm dry-run deployment"
     required: false
@@ -241,6 +247,38 @@ runs:
         
         echo "${{ inputs.github_token }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
         
+        # Refuse to go backwards. Two deploys that never overlap are not ordered
+        # by anything: build duration varies by a factor of five on some
+        # repositories, so a small change merged second can overtake a large one
+        # merged first and land an older version last — with both runs green and
+        # nothing reporting it. Serialising concurrent deploys does not help,
+        # because these never contend.
+        deployed="$(helm list --namespace "${{ inputs.namespace }}" --filter "^${{ inputs.component_name }}$" \
+          --output json 2>/dev/null | jq -r '.[0].chart // ""' | sed -E 's|^.*-([0-9]+\.[0-9]+\.[0-9]+.*)$|\1|')"
+
+        if [ -n "${deployed}" ] && [ "${deployed}" != "${{ inputs.chart_version }}" ]; then
+          # sort -V puts the older version first; if that is the incoming one,
+          # this deploy would move the environment backwards.
+          older="$(printf '%s\n%s\n' "${deployed}" "${{ inputs.chart_version }}" | sort -V | head -n1)"
+          if [ "${older}" == "${{ inputs.chart_version }}" ]; then
+            if [ "${{ inputs.allow_downgrade }}" = "true" ]; then
+              echo "::warning::deploying ${{ inputs.chart_version }} over ${deployed} — downgrade allowed explicitly"
+            else
+              echo "::error::${{ inputs.purpose }} runs ${deployed}; refusing to deploy the older ${{ inputs.chart_version }}"
+              {
+                echo "# Refused: this would downgrade ${{ inputs.purpose }}"
+                echo "| | version |"
+                echo "|---|---|"
+                echo "| deployed | \`${deployed}\` |"
+                echo "| incoming | \`${{ inputs.chart_version }}\` |"
+                echo
+                echo "If the older version is genuinely wanted — a rollback — set \`allow_downgrade: true\`."
+              } >>"${GITHUB_STEP_SUMMARY}"
+              exit 1
+            fi
+          fi
+        fi
+
         echo "🚀🚀🚀 Upgrading ${{ inputs.purpose }} in ${{ steps.purpose_config.outputs.cluster_name }} 🚀🚀🚀"
         echo "${{ inputs.chart_name }}:${{ inputs.chart_version }}"
         echo "🚀🚀🚀 ==================== 🚀🚀🚀"

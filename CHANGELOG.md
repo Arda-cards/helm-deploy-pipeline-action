@@ -18,6 +18,18 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [4.2.0] - 2026-08-07
+
+### Added
+
+- A deploy is refused when the incoming chart version is older than the one already released in the
+  namespace, unless the new `allow_downgrade` input says otherwise. Two deploys that never overlap are
+  ordered by nothing: build duration varies by a factor of five on some repositories, so a small change
+  merged second can overtake a large one merged first and land the older version last — both runs green,
+  nothing reporting it. Serialising concurrent deploys does not help, because these never contend.
+  `allow_downgrade` exists because a rollback is a legitimate, deliberate act; the callers that perform
+  one set it, and the automated release chain never does.
+
 ## [4.1.1] - 2026-07-14
 
 ### Fixed
