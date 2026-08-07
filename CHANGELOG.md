@@ -28,7 +28,11 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   merged second can overtake a large one merged first and land the older version last — both runs green,
   nothing reporting it. Serialising concurrent deploys does not help, because these never contend.
   `allow_downgrade` exists because a rollback is a legitimate, deliberate act; the callers that perform
-  one set it, and the automated release chain never does.
+  one set it, and the automated release chain never does. A failure to list releases is reported rather
+  than read as "nothing deployed yet", which would wave the check through exactly when the environment
+  is least understood, and build metadata is stripped before comparing since SemVer gives it no
+  precedence. Prerelease ordering is left to `sort -V`, which is not strict SemVer about it — callers
+  deploying prereleases, such as feature builds, set `allow_downgrade` for that reason.
 
 ## [4.1.1] - 2026-07-14
 

@@ -253,14 +253,29 @@ runs:
         # merged first and land an older version last — with both runs green and
         # nothing reporting it. Serialising concurrent deploys does not help,
         # because these never contend.
-        deployed="$(helm list --namespace "${{ inputs.namespace }}" --filter "^${{ inputs.component_name }}$" \
-          --output json 2>/dev/null | jq -r '.[0].chart // ""' | sed -E 's|^.*-([0-9]+\.[0-9]+\.[0-9]+.*)$|\1|')"
+        # helm list failing is a real condition — no cluster, no credentials — and
+        # must not be mistaken for "nothing is deployed yet", which would wave
+        # this check through exactly when the environment is least understood.
+        if ! releases="$(helm list --namespace "${{ inputs.namespace }}" \
+            --filter "^${{ inputs.component_name }}$" --output json)"; then
+          echo "::error::could not list releases in ${{ inputs.namespace }}"
+          exit 1
+        fi
+        deployed="$(jq -r '.[0].chart // ""' <<<"${releases}" |
+          sed -E 's|^.*-([0-9]+\.[0-9]+\.[0-9]+.*)$|\1|')"
 
-        if [ -n "${deployed}" ] && [ "${deployed}" != "${{ inputs.chart_version }}" ]; then
+        # SemVer says build metadata carries no precedence, but sort -V orders on
+        # it, so 1.2.3+1 against 1.2.3+2 would read as a downgrade. Compare
+        # without it.
+        readonly incoming="${{ inputs.chart_version }}"
+        deployed_core="${deployed%%+*}"
+        incoming_core="${incoming%%+*}"
+
+        if [ -n "${deployed}" ] && [ "${deployed_core}" != "${incoming_core}" ]; then
           # sort -V puts the older version first; if that is the incoming one,
           # this deploy would move the environment backwards.
-          older="$(printf '%s\n%s\n' "${deployed}" "${{ inputs.chart_version }}" | sort -V | head -n1)"
-          if [ "${older}" == "${{ inputs.chart_version }}" ]; then
+          older="$(printf '%s\n%s\n' "${deployed_core}" "${incoming_core}" | sort -V | head -n1)"
+          if [ "${older}" == "${incoming_core}" ]; then
             if [ "${{ inputs.allow_downgrade }}" = "true" ]; then
               echo "::warning::deploying ${{ inputs.chart_version }} over ${deployed} — downgrade allowed explicitly"
             else
