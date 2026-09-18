@@ -18,6 +18,12 @@ Categories, defined in [changemap.json](.github/clq/changemap.json):
   - `Fixed` for any bugfixes.
   - `Security` in case of vulnerabilities.
 
+## [4.1.2] - 2026-09-18
+
+### Fixed
+
+- Use the `Infrastructure` tag from the current role, and not the name of the account, as the infrastructure name.
+
 ## [4.1.1] - 2026-07-14
 
 ### Fixed

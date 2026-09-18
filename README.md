@@ -41,11 +41,11 @@ If both parameters are present, both headers are added and behavior is defined b
 
 The action sets the following parameters for both the pre and the post installation stacks.
 
-| name           | description                               |
-|----------------|-------------------------------------------|
-| Infrastructure | The name of the AWS account.              |
-| Namespace      | The name of the namespace to deploy to.   |
-| Component      | The name of the component being deployed. |
+| name           | description                                      |
+|----------------|--------------------------------------------------|
+| Infrastructure | The `Infrastructure` tag of the AWS GitHub role. |
+| Namespace      | The name of the namespace to deploy to.          |
+| Component      | The name of the component being deployed.        |
 
 Values from the `pre_install_parameter` and `post_install_parameter` file are added to the set.
 The files are JSON array:

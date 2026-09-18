@@ -103,14 +103,23 @@ runs:
         role-to-assume: "${{ steps.purpose_config.outputs.aws_role }}"
         aws-region: "${{ steps.purpose_config.outputs.aws_region }}"
         role-duration-seconds: 900
-    - name: "Extract account information"
+    - name: "Extract infrastructure information"
       id: account_information
       shell: bash
       run: |
         [ "${{ runner.debug }}" == 1 ] && set -xv
         set -u
 
-        readonly name=$(aws --query AccountName --output text account get-account-information)
+        readonly role_arn="${{ steps.purpose_config.outputs.aws_role }}"
+        readonly role_name="${role_arn##*/}"
+        readonly name=$(aws iam list-role-tags \
+          --role-name "${role_name}" \
+          --query "Tags[?Key == 'Infrastructure'].Value" \
+          --output text)
+        if [ -z "${name}" ] || [ "${name}" = "None" ]; then
+          echo "::error::AWS role ${role_arn} has no Infrastructure tag"
+          exit 1
+        fi
         echo "name=${name}" >>"${GITHUB_OUTPUT}"
     - name: "Add default CloudFormation Parameters"
       id: cloudformation_parameter
