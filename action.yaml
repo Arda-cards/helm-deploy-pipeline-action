@@ -103,8 +103,8 @@ runs:
         role-to-assume: "${{ steps.purpose_config.outputs.aws_role }}"
         aws-region: "${{ steps.purpose_config.outputs.aws_region }}"
         role-duration-seconds: 900
-    - name: "Extract infrastructure information"
-      id: account_information
+    - name: "Extract infrastructure name"
+      id: get_infrastructure
       shell: bash
       run: |
         [ "${{ runner.debug }}" == 1 ] && set -xv
@@ -152,7 +152,7 @@ runs:
           echo "${2}=file:///${file_name}" >>"${GITHUB_OUTPUT}"
 
           maybeAppend "${file_name}" "Component" "${{ inputs.component_name }}"
-          maybeAppend "${file_name}" "Infrastructure" "${{ steps.account_information.outputs.name }}"
+          maybeAppend "${file_name}" "Infrastructure" "${{ steps.get_infrastructure.outputs.name }}"
           maybeAppend "${file_name}" "Namespace" "${{ inputs.namespace }}"
           maybeAppend "${file_name}" "Purpose" "${{ inputs.purpose }}"
         }
@@ -165,9 +165,9 @@ runs:
       with:
         capabilities: "CAPABILITY_NAMED_IAM"
         mode: ${{ inputs.dry_run == 'false' && 'create-and-execute' || 'create-only' }}
-        name: "${{ steps.account_information.outputs.name }}-${{ inputs.namespace }}-pre"
+        name: "${{ steps.get_infrastructure.outputs.name }}-${{ inputs.namespace }}-pre"
         parameter-overrides: "${{ steps.cloudformation_parameter.outputs.pre_install_parameter }}"
-        tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
+        tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.get_infrastructure.outputs.name }}\" } ]"
         template: "src/main/cloudformation/pre-install.cfn.yml"
     - name: "Parametrize Helm values from CloudFormationExports"
       id: helm_value
@@ -177,9 +177,9 @@ runs:
         set -u
 
         function readExport {
-          local value="$(aws cloudformation list-exports --query "Exports[?Name=='${{ steps.account_information.outputs.name }}-${2}'].Value" --output text)"
+          local value="$(aws cloudformation list-exports --query "Exports[?Name=='${{ steps.get_infrastructure.outputs.name }}-${2}'].Value" --output text)"
           if [ -z "${value}" ]; then
-            echo "::error::CloudFormation export ${{ steps.account_information.outputs.name }}-${2} not found or empty"
+            echo "::error::CloudFormation export ${{ steps.get_infrastructure.outputs.name }}-${2} not found or empty"
             exit 1
           fi
           yq -i "${1} = \"${value}\"" "${3}"
@@ -188,9 +188,9 @@ runs:
         # ARN for secret name:
         # arn:aws:secretsmanager:${region}:${account}:secret:${secret_name}-${version}
         function readSecretName {
-          local value="$(aws cloudformation list-exports --query "Exports[?Name=='${{ steps.account_information.outputs.name }}-${2}'].Value" --output text)"
+          local value="$(aws cloudformation list-exports --query "Exports[?Name=='${{ steps.get_infrastructure.outputs.name }}-${2}'].Value" --output text)"
           if [ -z "${value}" ]; then
-            echo "::error::CloudFormation export ${{ steps.account_information.outputs.name }}-${2} not found or empty"
+            echo "::error::CloudFormation export ${{ steps.get_infrastructure.outputs.name }}-${2} not found or empty"
             exit 1
           fi
           local secret_long_name=${value##*:secret:}
@@ -200,15 +200,15 @@ runs:
         file_name="${{ runner.temp }}/cloudFormation-values.yaml"
         echo "file_name=${file_name}" >>${GITHUB_OUTPUT}
         echo "---" >|${file_name}
-        yq -i ".global.infrastructure = \"${{ steps.account_information.outputs.name }}\"" ${file_name}
-        yq -i ".global.infrastructure = \"${{ steps.account_information.outputs.name }}\"" ${file_name}
-        yq -i ".global.infrastructure = \"${{ steps.account_information.outputs.name }}\"" ${file_name}
+        yq -i ".global.infrastructure = \"${{ steps.get_infrastructure.outputs.name }}\"" ${file_name}
+        yq -i ".global.infrastructure = \"${{ steps.get_infrastructure.outputs.name }}\"" ${file_name}
+        yq -i ".global.infrastructure = \"${{ steps.get_infrastructure.outputs.name }}\"" ${file_name}
 
         if [[ -f ${{ inputs.helm_value_command }} && -r ${{ inputs.helm_value_command }} ]]; then
           # read file line by line and write command to set *Key* to *Action* *Value*.   Field separator is ":"
 
           COMPONENT="${{ inputs.component_name }}" \
-          INFRASTRUCTURE="${{ steps.account_information.outputs.name }}" \
+          INFRASTRUCTURE="${{ steps.get_infrastructure.outputs.name }}" \
           NAMESPACE="${{ inputs.namespace }}" \
           PURPOSE="${{ inputs.purpose }}" \
           envsubst '${COMPONENT} ${INFRASTRUCTURE} ${NAMESPACE} ${PURPOSE}' <"${{ inputs.helm_value_command }}" |
@@ -283,9 +283,9 @@ runs:
       if: ${{ hashFiles('src/main/cloudformation/post-install.cfn.yml') != '' }}
       with:
         mode: ${{ inputs.dry_run == 'false' && 'create-and-execute' || 'create-only' }}
-        name: "${{ steps.account_information.outputs.name }}-${{ inputs.namespace }}-post"
+        name: "${{ steps.get_infrastructure.outputs.name }}-${{ inputs.namespace }}-post"
         parameter-overrides: "${{ steps.cloudformation_parameter.outputs.post_install_parameter }}"
-        tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.account_information.outputs.name }}\" } ]"
+        tags: "[ { \"Key\":\"Infrastructure\", \"Value\":\"${{ steps.get_infrastructure.outputs.name }}\" } ]"
         template: "src/main/cloudformation/post-install.cfn.yml"
     - name: Trigger post-deployment test
       if: ${{ inputs.purpose == 'dev' && inputs.workflow_dispatch_name && inputs.workflow_dispatch_ref && inputs.workflow_dispatch_repository && inputs.workflow_dispatch_token }}
